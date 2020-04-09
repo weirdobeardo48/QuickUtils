@@ -12,8 +12,10 @@ f = requests.Session()
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--url', required=True, help="URL to xamvn thread")
-parser.add_argument('--fromPage', help="The page you want crawler to start from")
-parser.add_argument('--toPage', required=True, help="The page you want crawler to finish at")
+parser.add_argument(
+    '--fromPage', help="The page you want crawler to start from")
+parser.add_argument('--toPage', required=True,
+                    help="The page you want crawler to finish at")
 # At the moment, I haven't do the login part
 parser.add_argument('--username',
                     help="Your user name, not necessary, but required you have to login first, to have the cookies")
@@ -100,12 +102,6 @@ requests_headers = {
     'sec-fetch-dest': 'document',
     'sec-fetch-site': 'none',
     'sec-fetch-mode': 'navigate',
-    'authority': 'xamvn.cc',
-    'pragma': 'no-cache',
-    'cache-control': 'no-cache',
-    'sec-fetch-dest': 'image',
-    'sec-fetch-site': 'same-origin',
-    'sec-fetch-mode': 'no-cors',
     'cookie': '__cfduid=def25efddd8206543a6f399b3d3a15f9d1586339627; xfa_user=149239%2CBr28pk8oVswzurYQN6Aq5Wb-cVwrKgUXj9nGBxTi; xfa_csrf=T7MZSoQUm_WlxUaN; xfa_session=xBabxE1Vd6IGz70mqq3QB63oMOM7hE4O'
 }
 
@@ -120,7 +116,8 @@ def get_element_url_and_download(elements):
         if 'attachments' in link or 'proxy.php' in link or 'video' in link:
             import time
 
-            log.info("Sleeping for %s second" % str(config['CHROME-DRIVER']['interval-between-crawl']))
+            log.info("Sleeping for %s second" %
+                     str(config['CHROME-DRIVER']['interval-between-crawl']))
             time.sleep(int(config['CHROME-DRIVER']['interval-between-crawl']))
             count += 1
             f = requests.get(link, headers=requests_headers)
@@ -151,8 +148,10 @@ if __name__ == '__main__':
 
     # We need several options to make sure all the cookies, cache will not be missed!
     chromeOptions = webdriver.ChromeOptions()
-    log.debug('Chrome --user-data-dir is %s' % config['XAMVN']['user-data-dir'])
-    chromeOptions.add_argument('%s=%s' % ('--user-data-dir', config['XAMVN']['user-data-dir']))
+    log.debug('Chrome --user-data-dir is %s' %
+              config['XAMVN']['user-data-dir'])
+    chromeOptions.add_argument('%s=%s' % (
+        '--user-data-dir', config['XAMVN']['user-data-dir']))
     if config['CHROME-DRIVER']['headless-mode'] == '1':
         log.debug('Chrome is running in headless mode')
         chromeOptions.add_argument("--headless")
@@ -176,7 +175,8 @@ if __name__ == '__main__':
     log.info('Creating request session and put the cookies from Chrome to requests')
     for cook in cookies:
         for cookie in cook:
-            log.debug('Adding cookie: %s -- value: %s' % (cookie, cook[cookie]))
+            log.debug('Adding cookie: %s -- value: %s' %
+                      (cookie, cook[cookie]))
             f.cookies.set(cookie, cook[cookie])
         # break
     while currentPage < to_page + 1:

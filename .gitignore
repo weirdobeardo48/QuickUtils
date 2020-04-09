@@ -591,3 +591,4 @@ MigrationBackup/
 
 .idea/
 *.ini
+.vscode/
