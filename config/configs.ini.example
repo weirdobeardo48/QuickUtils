@@ -1,0 +1,16 @@
+[LOGGER]
+log_file_path=/home/<username>/PycharmProjects/QuickUtils/logs/
+default_log_level=DEBUG
+std_out_log_level=DEBUG
+file_log_level=INFO
+
+
+[CHROME-DRIVER]
+executable-path=/home/<username>/PycharmProjects/QuickUtils/chromedriver
+interval-between-crawl=1
+headless-mode=1
+
+
+[XAMVN]
+user-data-dir=/ramdisk-1/selenium/chromepf/xam/
+default-download-dir=/home/<username>/Downloads/kaka/
