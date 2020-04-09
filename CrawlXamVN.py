@@ -12,6 +12,8 @@ f = requests.Session()
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--url', required=True, help="URL to xamvn thread")
+parser.add_argument('--fromPage', help="The page you want crawler to start from")
+parser.add_argument('--toPage', required=True, help="The page you want crawler to finish at")
 # At the moment, I haven't do the login part
 parser.add_argument('--username',
                     help="Your user name, not necessary, but required you have to login first, to have the cookies")
@@ -22,6 +24,8 @@ parser = parser.parse_args()
 URL = parser.url
 user_name = parser.username
 password = parser.password
+from_page = parser.fromPage
+to_page = int(parser.toPage)
 
 # We are gonna read config from config files by using this function
 config = None
@@ -165,6 +169,8 @@ if __name__ == '__main__':
     # Get URL, to get some cookies, blah blah, and parse them to the fucking request
     driver.get(URL)
     currentPage = 1
+    if from_page is not None:
+        currentPage = int(from_page)
     log.info('Getting cookies')
     cookies = driver.get_cookies()
     log.info('Creating request session and put the cookies from Chrome to requests')
@@ -173,7 +179,7 @@ if __name__ == '__main__':
             log.debug('Adding cookie: %s -- value: %s' % (cookie, cook[cookie]))
             f.cookies.set(cookie, cook[cookie])
         # break
-    while currentPage < 80:
+    while currentPage < to_page + 1:
         log.info('Getting page: %s' % str(currentPage))
         driver.get(URL + '/page-' + str(currentPage))
 
