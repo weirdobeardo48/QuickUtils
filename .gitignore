@@ -590,3 +590,4 @@ MigrationBackup/
 # End of https://www.gitignore.io/api/python,pycharm,sublimetext,visualstudio,visualstudiocode
 
 .idea/
+*.ini
