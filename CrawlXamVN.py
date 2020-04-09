@@ -6,6 +6,9 @@ import logging.config
 import configparser
 import argparse
 
+f = requests.Session()
+
+# Take argument
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--url', required=True, help="URL to xamvn thread")
@@ -19,9 +22,9 @@ parser = parser.parse_args()
 URL = parser.url
 user_name = parser.username
 password = parser.password
-# We are gonna read config from config folder by using this function
+
+# We are gonna read config from config files by using this function
 config = None
-f = requests.Session()
 
 
 def init_config():
@@ -34,7 +37,7 @@ def init_config():
 # End init config, call it in what ever you want to read, or re-read!
 
 
-# This help us easier in define log!
+# This help us easier in defining log!
 
 log = logging.getLogger(__name__)
 
@@ -83,7 +86,7 @@ def init_log():
 
 # End defining log
 
-# Temporary, too lazy to do this, please make a pull request for this
+# Temporary, too lazy to do this, please make a pull request for parsing cookies, request headers from Chrome to requests
 requests_headers = {
     'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36',
     'authority': 'xamvn.cc',
@@ -108,7 +111,7 @@ def get_element_url_and_download(elements):
     global f
     for element in elements:
         link = element.get_attribute('src')
-        log.info("Getting: %s" % link)
+        log.info("Getting URL: %s" % link)
         # Getting images that are uploaded by user, or embed by users, not avatar, logo, blah
         if 'attachments' in link or 'proxy.php' in link or 'video' in link:
             import time
@@ -171,7 +174,7 @@ if __name__ == '__main__':
             f.cookies.set(cookie, cook[cookie])
         # break
     while currentPage < 80:
-        log.info('Getting page : %s' % str(currentPage))
+        log.info('Getting page: %s' % str(currentPage))
         driver.get(URL + '/page-' + str(currentPage))
 
         # Get all the images
