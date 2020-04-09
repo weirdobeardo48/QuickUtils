@@ -123,7 +123,7 @@ def get_element_url_and_download(elements):
             f = requests.get(link, headers=requests_headers)
             log.info("Status code: " + str(f.status_code))
             if f.status_code == 200:
-                log.info("Downloading")
+                log.info("Downloading from URL: %s", link)
                 if not os.path.exists(
                         os.path.join(config['XAMVN']['default-download-dir'], str(currentPage))):
                     os.makedirs(
