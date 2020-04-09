@@ -110,22 +110,22 @@ def get_element_url_and_download(elements):
         link = element.get_attribute('src')
         log.info("Getting: %s" % link)
         # Getting images that are uploaded by user, or embed by users, not avatar, logo, blah
-        if 'attachments' in link or 'proxy.php' in link:
+        if 'attachments' in link or 'proxy.php' in link or 'video' in link:
             import time
 
             log.info("Sleeping for %s second" % str(config['CHROME-DRIVER']['interval-between-crawl']))
-            time.sleep(config['CHROME-DRIVER']['interval-between-crawl'])
+            time.sleep(int(config['CHROME-DRIVER']['interval-between-crawl']))
             count += 1
             f = requests.get(link, headers=requests_headers)
             log.info("Status code: " + str(f.status_code))
             if f.status_code == 200:
                 log.info("Downloading")
                 if not os.path.exists(
-                        os.path.join(config['CHROME-DRIVER']['default-download-dir'], str(currentPage))):
+                        os.path.join(config['XAMVN']['default-download-dir'], str(currentPage))):
                     os.makedirs(
-                        os.path.join(config['CHROME-DRIVER']['default-download-dir'], str(currentPage)))
+                        os.path.join(config['XAMVN']['default-download-dir'], str(currentPage)))
                 file_type = str(f.headers['Content-Type']).split('/')[-1]
-                with open(os.path.join(config['CHROME-DRIVER']['default-download-dir'], str(currentPage),
+                with open(os.path.join(config['XAMVN']['default-download-dir'], str(currentPage),
                                        str(count) + "." + file_type), 'wb') as file:
                     file.write(f.content)
                 log.info("Done getting URL: %s" % link)
@@ -172,7 +172,7 @@ if __name__ == '__main__':
         # break
     while currentPage < 80:
         log.info('Getting page : %s' % str(currentPage))
-        driver.get(URL + ' /page-' + str(currentPage))
+        driver.get(URL + '/page-' + str(currentPage))
 
         # Get all the images
         images = driver.find_elements_by_tag_name('img')
