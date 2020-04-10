@@ -16,7 +16,7 @@ parser.add_argument(
     '--fromPage', help="The page you want crawler to start from")
 parser.add_argument('--toPage', required=True,
                     help="The page you want crawler to finish at")
-# At the moment, I haven't do the login part
+# At the moment, I haven't done the login part yet, pull request please?
 parser.add_argument('--username',
                     help="Your user name, not necessary, but required you have to login first, to have the cookies")
 parser.add_argument('--password',
