@@ -1,8 +1,8 @@
 [LOGGER]
-log_file_path=/home/<username>/PycharmProjects/QuickUtils/logs/
+log_file_path=./logs/
 default_log_level=DEBUG
-std_out_log_level=DEBUG
-file_log_level=INFO
+std_out_log_level=INFO
+file_log_level=DEBUG
 
 
 [CHROME-DRIVER]
