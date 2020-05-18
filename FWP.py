@@ -76,6 +76,7 @@ def do_forward(params):
             client = sk.accept()[0]
             server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             server.connect((params[2], int(params[3])))
+            log.info("Routing connect %s ---> %s ---> %s" % (client.getpeername(), client.getsockname(), server.getpeername()))
             threading._start_new_thread(forward, (client, server))
             threading._start_new_thread(forward, (server, client))
     except Exception as e:
@@ -133,7 +134,7 @@ def main():
                     if param not in running:
                         running.add(param)
                     else:
-                        log.info("Existed")
+                        log.info("%s is NAT-ed, Ignore!!" % param)
                         continue
                     param = parse_params(param=param)
                     log.info(param)
