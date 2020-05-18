@@ -24,6 +24,8 @@ def init_config():
 # Init config right away
 init_config()
 
+binding = set()
+
 
 def init_log():
     global config
@@ -71,12 +73,14 @@ def do_forward(params):
     sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sk.bind((params[0], int(params[1])))
     sk.listen(5)
+    binding.add(sk)
     try:
         while True:
             client = sk.accept()[0]
             server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             server.connect((params[2], int(params[3])))
-            log.info("Routing connect: %s ---> %s ---> %s" % (client.getpeername(), client.getsockname(), server.getpeername()))
+            log.info("Routing connect: %s ---> %s ---> %s" %
+                     (client.getpeername(), client.getsockname(), server.getpeername()))
             threading._start_new_thread(forward, (client, server))
             threading._start_new_thread(forward, (server, client))
     except Exception as e:
@@ -87,21 +91,28 @@ def do_forward(params):
 
 
 def forward(source, destination):
+    try:
+        log.debug("Ongoing connection route: %s ---> %s ---> %s" %
+                  (source.getpeername(), source.getsockname(), destination.getpeername()))
+    except:
+        # Do nothing
+        log.debug("Socket closed maybe??")
     string = ' '
     while string:
         string = source.recv(1024)
         if string:
-            log.debug("Ongoing connection route: %s ---> %s ---> %s" % (source.getpeername(), source.getsockname(), destination.getpeername()))
             destination.sendall(string)
         else:
             try:
                 source.shutdown(socket.SHUT_RD)
             except:
-                traceback.print_exc()
+                # traceback.print_exc()
+                print()
             try:
                 destination.shutdown(socket.SHUT_WR)
             except:
-                traceback.print_exc()
+                # traceback.print_exc()
+                print()
 
 
 def parse_params(param):
@@ -149,6 +160,13 @@ def main():
                 traceback.print_exc()
             finally:
                 command = ""
+        elif command == "exit":
+            for sk in binding:
+                try:
+                    sk.shutdown(socket.SHUT_RD)
+                except:
+                    traceback.print_exc()
+            sys.exit(1)
         else:
             log.info("Command not found!")
             # log.info(command)
