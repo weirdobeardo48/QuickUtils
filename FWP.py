@@ -1,3 +1,6 @@
+"""
+This script is written By TruongNX to bypass several inspection tools at work. Use it at your own risk! Kaka
+"""
 import re
 import socket
 import sys
@@ -205,8 +208,8 @@ def main():
                     param = parse_params(param=param)
                     # log.info(param)
                     if param is not None:
-                        log.info("Forwarding with params: Source - %s:%s, Dest - %s:%s" %
-                                 (param[1], param[2], param[4], param[5]))
+                        log.info("Forwarding with params: Source - %s:%s:%s, Dest - %s:%s:%s" %
+                                 (param[0], param[1], param[2], param[3], param[4], param[5]))
                         # Fork TCP Forward
                         if param[0] == 'tcp':
                             thread = threading.Thread(
