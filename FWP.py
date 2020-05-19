@@ -12,6 +12,7 @@ import configparser
 log = logging.getLogger(__name__
                         )
 config = None
+bufsize = 1024 * 128
 
 
 def init_config():
@@ -69,16 +70,66 @@ def init_log():
     logging.config.dictConfig(logging_config)
 
 
-def do_forward(params):
+udp_nat_port = {}
+
+
+def forward_udp(params):
+    sk = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+    sk.settimeout(300)
+    sk.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+    sk.bind((params[1], int(params[2])))
+    while True:
+        client = sk.recvfrom(bufsize)
+        if client:
+            if client[1] not in udp_nat_port:
+                server_socket = socket.socket(
+                    socket.AF_INET, socket.SOCK_DGRAM)
+                server_socket.connect((params[4], int(params[5])))
+                server_socket.sendall(client[0])
+                server_msg = server_socket.recvfrom(bufsize)
+                udp_nat_port[client[1]] = server_socket
+                udp_nat_port[server_msg[1]] = client[1]
+                sk.sendto(server_msg[0], client[1])
+                # log.info("Spawning thread")
+                thread = threading.Thread(target=forward_udp_to_udp, args=[
+                                          sk, server_socket])
+                thread.start()
+            else:
+                server_socket = udp_nat_port.get(client[1])
+                server_socket.sendall(client[0])
+
+def forward_udp_to_udp(listen_socket: socket.socket, client_socket: socket.socket):
+    while True:
+        try:
+            server_msg = client_socket.recvfrom(bufsize)
+            if server_msg:
+                listen_socket.sendto(
+                    server_msg[0], udp_nat_port[server_msg[1]])
+        except:
+            # If it throws exception, looks like the socket has been closed, let's close our socket
+            try:
+                log.debug("Removing entry from map to prevent anything wrong")
+                del udp_nat_port[udp_nat_port[server_msg[1]]]
+                client_socket.shutdown(socket.SHUT_RD)
+            except:
+                print()
+
+            try:
+                del udp_nat_port[server_msg[1]]
+            except:
+                print()
+
+def forward_tcp(params):
     sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sk.bind((params[0], int(params[1])))
+    sk.bind((params[1], int(params[2])))
     sk.listen(5)
     binding.add(sk)
     try:
         while True:
             client = sk.accept()[0]
             server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            server.connect((params[2], int(params[3])))
+            # At the moment, udp over tcp is not currently supported
+            server.connect((params[4], int(params[5])))
             log.info("Routing connect: %s ---> %s ---> %s ---> %s" %
                      (client.getpeername(), client.getsockname(), server.getsockname(), server.getpeername()))
             threading._start_new_thread(forward, (client, server))
@@ -87,7 +138,7 @@ def do_forward(params):
         sk.shutdown(socket.SHUT_RD)
         traceback.print_exc()
     finally:
-        thread = threading.Thread(target=do_forward, args=[params])
+        thread = threading.Thread(target=forward_tcp, args=[params])
 
 
 def forward(source, destination):
@@ -118,10 +169,10 @@ def forward(source, destination):
 def parse_params(param):
     to_split = re.split("\\s+", param)
     # log.info(to_split)
-    if len(to_split) < 4:
+    if len(to_split) < 6:
         return None
     else:
-        return [to_split[0], to_split[1], to_split[2], to_split[3]]
+        return [to_split[0], to_split[1], to_split[2], to_split[3], to_split[4], to_split[5]]
 
 
 def main():
@@ -142,20 +193,26 @@ def main():
                         params.add(line)
                 # Kaka, we have a list need to do
                 for param in params:
-                    log.info(param)
+                    # log.info(param)
                     if param not in running:
                         running.add(param)
                     else:
                         log.info("%s is NAT-ed, Ignore!!" % param)
                         continue
                     param = parse_params(param=param)
-                    log.info(param)
+                    # log.info(param)
                     if param is not None:
                         log.info("Forwarding with params: Source - %s:%s, Dest - %s:%s" %
-                                 (param[0], param[1], param[2], param[3]))
-                        thread = threading.Thread(
-                            target=do_forward, args=[param])
-                        thread.start()
+                                 (param[1], param[2], param[4], param[5]))
+                        # Fork TCP Forward
+                        if param[0] == 'tcp':
+                            thread = threading.Thread(
+                                target=forward_tcp, args=[param])
+                            thread.start()
+                        # Fork UDP Forward
+                        if param[0] == 'udp':
+                            thread= threading.Thread(target=forward_udp, args=[param])
+                            thread.start()
             except:
                 traceback.print_exc()
             finally:
