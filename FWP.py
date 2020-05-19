@@ -108,12 +108,14 @@ def forward_udp_to_udp(listen_socket: socket.socket, client_socket: socket.socke
         except:
             # If it throws exception, looks like the socket has been closed, let's close our socket
             try:
-                log.debug("Removing entry from map to prevent anything wrong")
-                del udp_nat_port[udp_nat_port[server_msg[1]]]
                 client_socket.shutdown(socket.SHUT_RD)
             except:
                 print()
-
+            try:
+                del udp_nat_port[udp_nat_port[server_msg[1]]]
+                log.debug("Removing entry from map to prevent anything wrong")
+            except:
+                print()
             try:
                 del udp_nat_port[server_msg[1]]
             except:
@@ -133,8 +135,8 @@ def forward_tcp(params):
             server.connect((params[4], int(params[5])))
             log.info("Routing connect: %s ---> %s ---> %s ---> %s" %
                      (client.getpeername(), client.getsockname(), server.getsockname(), server.getpeername()))
-            threading._start_new_thread(forward, (client, server))
-            threading._start_new_thread(forward, (server, client))
+            threading._start_new_thread(forward_tcp_to_tcp, (client, server))
+            threading._start_new_thread(forward_tcp_to_tcp, (server, client))
     except Exception as e:
         sk.shutdown(socket.SHUT_RD)
         traceback.print_exc()
@@ -142,7 +144,7 @@ def forward_tcp(params):
         thread = threading.Thread(target=forward_tcp, args=[params])
 
 
-def forward(source, destination):
+def forward_tcp_to_tcp(source, destination):
     try:
         log.debug("Ongoing connection route: %s ---> %s ---> %s" %
                   (source.getpeername(), source.getsockname(), destination.getpeername()))
