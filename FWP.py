@@ -30,7 +30,7 @@ binding = set()
 
 def init_log():
     global config
-    # Just a workaround, but whatever, this just a cheap script
+    # Just a workaround, but whatever, this is just a cheap script
     if os.path.join(config['LOGGER']['log_file_path']):
         if not os.path.exists(os.path.join(config['LOGGER']['log_file_path'])):
             os.makedirs(os.path.join(config['LOGGER']['log_file_path']))
@@ -90,13 +90,13 @@ def forward_udp(params):
                 udp_nat_port[client[1]] = server_socket
                 udp_nat_port[server_msg[1]] = client[1]
                 sk.sendto(server_msg[0], client[1])
-                # log.info("Spawning thread")
                 thread = threading.Thread(target=forward_udp_to_udp, args=[
                                           sk, server_socket])
                 thread.start()
             else:
                 server_socket = udp_nat_port.get(client[1])
                 server_socket.sendall(client[0])
+
 
 def forward_udp_to_udp(listen_socket: socket.socket, client_socket: socket.socket):
     while True:
@@ -118,6 +118,7 @@ def forward_udp_to_udp(listen_socket: socket.socket, client_socket: socket.socke
                 del udp_nat_port[server_msg[1]]
             except:
                 print()
+
 
 def forward_tcp(params):
     sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -211,7 +212,8 @@ def main():
                             thread.start()
                         # Fork UDP Forward
                         if param[0] == 'udp':
-                            thread= threading.Thread(target=forward_udp, args=[param])
+                            thread = threading.Thread(
+                                target=forward_udp, args=[param])
                             thread.start()
             except:
                 traceback.print_exc()
