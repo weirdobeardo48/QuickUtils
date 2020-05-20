@@ -13,8 +13,7 @@ import logging.config
 import os
 import configparser
 
-log = logging.getLogger(__name__
-                        )
+log = logging.getLogger(__name__)
 config = None
 
 udp_bufsize = 1024 * 128
@@ -328,8 +327,6 @@ def listen_tcp(params):
     except Exception as e:
         sk.shutdown(socket.SHUT_RD)
         traceback.print_exc()
-    finally:
-        thread = threading.Thread(target=listen_tcp, args=[params])
 
 
 def forward_tcp_to_tcp(source, destination):
