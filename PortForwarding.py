@@ -185,6 +185,7 @@ def forward_udp_to_udp(listen_socket: socket.socket, client_socket: socket.socke
                     del udp_nat_port[server_msg[1]]
                 except:
                     pass  # Do nothing then
+                break
         except:
             # If it throws exception, looks like the socket has been closed, let's close our socket
             try:
@@ -200,6 +201,7 @@ def forward_udp_to_udp(listen_socket: socket.socket, client_socket: socket.socke
                 del udp_nat_port[server_msg[1]]
             except:
                 pass  # Do nothing then
+            break
 
 
 def listen_udp_forward_tcp_to_udp(tcp_client_socket: socket.socket, udp_listening_socket: socket.socket, udp_client: tuple):
@@ -353,6 +355,7 @@ def forward_tcp_to_tcp(source, destination):
             except:
                 # traceback.print_exc()
                 pass  # Do nothing then
+            break
 
 
 def parse_params(param):
