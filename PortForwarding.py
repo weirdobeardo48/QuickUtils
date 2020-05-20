@@ -436,3 +436,11 @@ if __name__ == '__main__':
     init_log()
     # And start the program
     main()
+
+"""
+For python version that lower than 3.6, you might experienced some issue with this:
+    server : socket.socket = None 
+    change this to
+    server = None
+    and it should work
+"""
