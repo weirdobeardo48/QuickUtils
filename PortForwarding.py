@@ -80,21 +80,32 @@ def init_log():
     logging.config.dictConfig(logging_config)
 
 
-def listen_udp(params):
-    sk = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-
-    # Set default UDP timeout, this is important, or else, since UDP is a stateless protocol, you might be getting exhausted port due to this. Normally, I recommend to set it to 300s
-    udp_timeout = 300
-    # Read UDP timeout from config
-    if 'udp-timeout' in config['FORWARD']:
+def create_socket(socket_type: str, is_listen_port: bool) -> socket.socket:
+    new_socket: socket.socket = None
+    if socket_type == 'udp':
+        new_socket = socket.socket(
+            socket.AF_INET, socket.SOCK_DGRAM)
+    elif socket_type == 'tcp':
+        new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # Set default timeout
+    port_timeout = 300
+    if 'port-timeout' in config['FORWARD']:
         try:
-            udp_timeout = int(config['FORWARD']['udp-timeout'])
+            port_timeout = int(config['FORWARD']['port-timeout'])
         except:
-            log.info("UDP Timeout in configuration file is not a valid integer")
+            log.info("port-timeout in your configuration is not a valid integer")
+    if port_timeout > 0 and not is_listen_port:
+        log.info("Creating %s socket with timeout: %d" %
+                 (socket_type, port_timeout))
+        new_socket.settimeout(port_timeout)
+    if is_listen_port:
+        # This option makes the port is usable by many connection
+        new_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+    return new_socket
 
-    sk.settimeout(udp_timeout)
-    # This option makes the port is usable by many connection
-    sk.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+
+def listen_udp(params):
+    sk = create_socket('udp', True)
     # Bind the UDP port
     sk.bind((params[1], int(params[2])))
     # Add to the listening socket set
@@ -107,8 +118,8 @@ def listen_udp(params):
             if params[3] == 'tcp':
                 # What if user are aquiring UDP over TCP? Then well, we need to create a reserve tcp socket
                 if client[1] not in udp_over_tcp:
-                    server_socket = socket.socket(
-                        socket.AF_INET, socket.SOCK_STREAM)
+                    server_socket = create_socket('tcp', False)
+                    log.debug(server_socket)
                     server_socket.connect((params[4], int(params[5])))
                     server_socket.sendall(client[0])
                     udp_over_tcp[client[1]] = server_socket
@@ -122,8 +133,7 @@ def listen_udp(params):
                     except:
                         traceback.print_exc()
             elif params[3] == 'udp':
-                server_socket = socket.socket(
-                    socket.AF_INET, socket.SOCK_DGRAM)
+                server_socket = create_socket('udp', False)
                 if client[1] not in udp_nat_port:
                     # Well, there is a connection to the socket that, let's handle it
                     # We create a reserve socket for this client, so every request from this client ()
@@ -160,6 +170,21 @@ def forward_udp_to_udp(listen_socket: socket.socket, client_socket: socket.socke
             if server_msg:
                 listen_socket.sendto(
                     server_msg[0], udp_nat_port[server_msg[1]])
+            else:
+                try:
+                    client_socket.shutdown(socket.SHUT_RD)
+                except:
+                    pass  # Do nothing then
+                try:
+                    del udp_nat_port[udp_nat_port[server_msg[1]]]
+                    log.debug(
+                        "Removing entry from map to prevent anything wrong")
+                except:
+                    pass  # Do nothing then
+                try:
+                    del udp_nat_port[server_msg[1]]
+                except:
+                    pass  # Do nothing then
         except:
             # If it throws exception, looks like the socket has been closed, let's close our socket
             try:
@@ -197,13 +222,14 @@ def listen_udp_forward_tcp_to_udp(tcp_client_socket: socket.socket, udp_listenin
         except:
             traceback.print_exc()
             try:
-                tcp_client_socket.shutdown(socket.SHUT_RD)
+                tcp_client_socket.close()
             except:
                 pass
             try:
                 del udp_over_tcp[udp_client]
             except:
                 pass
+            break
 
 
 def listen_tcp_forward_udp_to_tcp(udp_reserve_socket: socket.socket, tcp_client_socket: socket.socket):
@@ -213,15 +239,26 @@ def listen_tcp_forward_udp_to_tcp(udp_reserve_socket: socket.socket, tcp_client_
             server_msg = udp_reserve_socket.recvfrom(udp_bufsize)
             if server_msg:
                 tcp_client_socket.sendall(server_msg[0])
+            else:
+                try:
+                    udp_reserve_socket.close()
+                except:
+                    pass
+                try:
+                    tcp_client_socket.close()
+                except:
+                    pass
+                break
         except:
             try:
-                udp_reserve_socket.shutdown(socket.SHUT_RD)
+                udp_reserve_socket.close()
             except:
                 pass
             try:
-                tcp_client_socket.shutdown(socket.SHUT_RD)
+                tcp_client_socket.close()
             except:
                 pass
+            break
 
 
 def listen_tcp_forward_tcp_to_udp(tcp_client_socket: socket.socket, udp_reserve_socket: socket.socket):
@@ -234,27 +271,29 @@ def listen_tcp_forward_tcp_to_udp(tcp_client_socket: socket.socket, udp_reserve_
                 udp_reserve_socket.sendall(message)
             else:
                 try:
-                    tcp_client_socket.shutdown(socket.SHUT_RD)
+                    tcp_client_socket.close()
                 except:
                     pass
                 try:
-                    udp_reserve_socket.shutdown(socket.SHUT_RD)
+                    udp_reserve_socket.close()
                 except:
                     pass
+                break
         except:
             traceback.print_exc()
             try:
-                tcp_client_socket.shutdown(socket.SHUT_RD)
+                tcp_client_socket.close()
             except:
                 pass
             try:
-                udp_reserve_socket.shutdown(socket.SHUT_RD)
+                udp_reserve_socket.close()
             except:
                 pass
+            break
 
 
 def listen_tcp(params):
-    sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sk = create_socket('tcp', True)
     sk.bind((params[1], int(params[2])))
     sk.listen(5)
     # Add to the listening socket set
@@ -264,12 +303,12 @@ def listen_tcp(params):
             # Accept connection from the client with 3-some handshake xD
             client = sk.accept()[0]
             # Create a reserve socket, depend on target protocol, set it to the correct matter
-            server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            server: socket.socket = None
+            if params[3] == 'tcp':
+                server = create_socket('tcp', False)
             if params[3] == 'udp':
-                server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                server.connect((params[4], int(params[5])))
-            elif params[3] == 'tcp':
-                server.connect((params[4], int(params[5])))
+                server = create_socket('udp', False)
+            server.connect((params[4], int(params[5])))
             # Ininiated a connection to the target
             log.debug("Routing connect: %s ---> %s ---> %s ---> %s" %
                       (client.getpeername(), client.getsockname(), server.getsockname(), server.getpeername()))
@@ -382,7 +421,6 @@ def main():
         elif command == "stop":
             # This command to shut down all the listening socket
             for listening_socket in listening_sockets:
-                listening_socket = socket.socket(listening_socket)
                 try:
                     listening_socket.shutdown(socket.SHUT_RD)
                 except:
