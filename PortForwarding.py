@@ -16,8 +16,8 @@ import configparser
 log = logging.getLogger(__name__)
 config = None
 
-udp_bufsize = 1024 * 128
-tcp_bufsize = 1024 * 128
+udp_bufsize = 1024 * 8
+tcp_bufsize = 1024 * 8
 
 
 def init_config():
@@ -29,6 +29,28 @@ def init_config():
 
 # Init config right away
 init_config()
+
+# Since config has been initinated, let's check if user want to change the buffer size
+
+
+def apply_bufsize():
+    if 'udp-bufsize' in config['FORWARD']:
+        try:
+            udp_bufsize = int(config['FORWARD']['udp-bufsize'])
+            log.info("Custom udp-bufersize: %d" % udp_bufsize)
+        except:
+            log.info("udp-bufsize should be an integer")
+    if 'tcp-bufsize' in config['FORWARD']:
+        try:
+            tcp_bufsize = int(config['FORWARD']['tcp-bufsize'])
+            log.info("Custom tcp-bufersize: %d" % tcp_bufsize)
+        except:
+            log.info("tcp-bufsize should be an integer")
+
+
+apply_bufsize()
+# End checking udp, tcp buf size
+
 
 # Creating a listening_sockets so we can manage the running socket
 listening_sockets = set()
