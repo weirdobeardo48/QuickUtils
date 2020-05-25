@@ -14,9 +14,10 @@ import logging.config
 import os
 import configparser
 
+TCP_PROTO = 'tcp'
+UDP_PROTO = 'udp'
 log = logging.getLogger(__name__)
 config = None
-
 udp_bufsize = 1024 * 8
 tcp_bufsize = 1024 * 8
 
@@ -104,10 +105,10 @@ def init_log():
 
 def create_socket(socket_type: str, is_listen_port: bool) -> socket.socket:
     new_socket: socket.socket = None
-    if socket_type == 'udp':
+    if socket_type == UDP_PROTO:
         new_socket = socket.socket(
             socket.AF_INET, socket.SOCK_DGRAM)
-    elif socket_type == 'tcp':
+    elif socket_type == TCP_PROTO:
         new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     if not is_listen_port:
         # Set default timeout
@@ -129,7 +130,7 @@ def create_socket(socket_type: str, is_listen_port: bool) -> socket.socket:
 
 
 def listen_udp(params):
-    sk = create_socket('udp', True)
+    sk = create_socket(UDP_PROTO, True)
     # Bind the UDP port
     sk.bind((params[1], int(params[2])))
     # Add to the listening socket set
@@ -142,7 +143,7 @@ def listen_udp(params):
             if params[3] == 'tcp':
                 # What if user are aquiring UDP over TCP? Then well, we need to create a reserve tcp socket
                 if client[1] not in udp_over_tcp:
-                    reserve_socket = create_socket('tcp', False)
+                    reserve_socket = create_socket(TCP_PROTO, False)
                     log.debug(reserve_socket)
                     reserve_socket.connect((params[4], int(params[5])))
                     reserve_socket.sendall(client[0])
@@ -157,7 +158,7 @@ def listen_udp(params):
                     except:
                         traceback.print_exc()
             elif params[3] == 'udp':
-                reserve_socket = create_socket('udp', False)
+                reserve_socket = create_socket(UDP_PROTO, False)
                 if client[1] not in udp_nat_port:
                     # Well, there is a connection to the socket that, let's handle it
                     # We create a reserve socket for this client, so every request from this client ()
@@ -319,7 +320,7 @@ def listen_tcp_forward_tcp_to_udp(tcp_client_socket: socket.socket, udp_reserve_
 
 
 def listen_tcp(params):
-    sk = create_socket('tcp', True)
+    sk = create_socket(TCP_PROTO, True)
     sk.bind((params[1], int(params[2])))
     sk.listen(5)
     # Add to the listening socket set
@@ -331,9 +332,9 @@ def listen_tcp(params):
             # Create a reserve socket, depend on target protocol, set it to the correct matter
             reserve_socket: socket.socket = None
             if params[3] == 'tcp':
-                reserve_socket = create_socket('tcp', False)
+                reserve_socket = create_socket(TCP_PROTO, False)
             if params[3] == 'udp':
-                reserve_socket = create_socket('udp', False)
+                reserve_socket = create_socket(UDP_PROTO, False)
             reserve_socket.connect((params[4], int(params[5])))
             # Ininiated a connection to the target
             log.debug("Routing connect: %s ---> %s ---> %s ---> %s" %
