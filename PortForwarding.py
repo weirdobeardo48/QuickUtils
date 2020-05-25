@@ -109,17 +109,19 @@ def create_socket(socket_type: str, is_listen_port: bool) -> socket.socket:
             socket.AF_INET, socket.SOCK_DGRAM)
     elif socket_type == 'tcp':
         new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # Set default timeout
-    port_timeout = 300
-    if 'port-timeout' in config['FORWARD']:
-        try:
-            port_timeout = int(config['FORWARD']['port-timeout'])
-        except:
-            log.info("port-timeout in your configuration is not a valid integer")
-    if port_timeout > 0 and not is_listen_port:
-        log.info("Creating %s socket with timeout: %d" %
-                 (socket_type, port_timeout))
-        new_socket.settimeout(port_timeout)
+    if not is_listen_port:
+        # Set default timeout
+        port_timeout = 300
+        if 'port-timeout' in config['FORWARD']:
+            try:
+                port_timeout = int(config['FORWARD']['port-timeout'])
+            except:
+                log.info(
+                    "port-timeout in your configuration is not a valid integer")
+        if port_timeout > 0 and not is_listen_port:
+            log.info("Creating %s socket with timeout: %d" %
+                     (socket_type, port_timeout))
+            new_socket.settimeout(port_timeout)
     if is_listen_port:
         # This option makes the port is usable by many connection
         new_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
