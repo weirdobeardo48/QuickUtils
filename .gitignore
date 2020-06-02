@@ -592,3 +592,5 @@ MigrationBackup/
 .idea/
 *.ini
 .vscode/
+*.log
+application.log*
