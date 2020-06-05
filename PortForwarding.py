@@ -351,7 +351,7 @@ def listen_tcp(params):
                 threading._start_new_thread(
                     listen_tcp_forward_tcp_to_udp, (client, reserve_socket))
     except Exception as e:
-        sk.shutdown(socket.SHUT_RD)
+        # sk.shutdown(socket.SHUT_RD)
         traceback.print_exc()
 
 
