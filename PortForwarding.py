@@ -136,56 +136,59 @@ def listen_udp(params):
     # Add to the listening socket set
     listening_sockets.add(sk)
     while True:
-        client = sk.recvfrom(udp_bufsize)
-        if client:
-            # Check if client has initiated a connection before, if not, create a new thread, reserve port for this connection and add it to the dictionary, so later on, we can reuse the reserve socket
-            # Client has not sent data to the sk before, or the old session has been killed
-            if params[3] == 'tcp':
-                # What if user are aquiring UDP over TCP? Then well, we need to create a reserve tcp socket
-                if client[1] not in udp_over_tcp:
-                    reserve_socket = create_socket(TCP_PROTO, False)
-                    log.debug(reserve_socket)
-                    reserve_socket.connect((params[4], int(params[5])))
-                    reserve_socket.sendall(client[0])
-                    udp_over_tcp[client[1]] = reserve_socket
-                    threading._start_new_thread(
-                        listen_udp_forward_tcp_to_udp, (reserve_socket, sk, client[1]))
-                else:
-                    try:
-                        reserve_socket = udp_over_tcp[client[1]]
-                        # log.debug(reserve_socket)
+        try:
+            client = sk.recvfrom(udp_bufsize)
+            if client:
+                # Check if client has initiated a connection before, if not, create a new thread, reserve port for this connection and add it to the dictionary, so later on, we can reuse the reserve socket
+                # Client has not sent data to the sk before, or the old session has been killed
+                if params[3] == 'tcp':
+                    # What if user are aquiring UDP over TCP? Then well, we need to create a reserve tcp socket
+                    if client[1] not in udp_over_tcp:
+                        reserve_socket = create_socket(TCP_PROTO, False)
+                        log.debug(reserve_socket)
+                        reserve_socket.connect((params[4], int(params[5])))
                         reserve_socket.sendall(client[0])
-                    except:
-                        traceback.print_exc()
-            elif params[3] == 'udp':
-                reserve_socket = create_socket(UDP_PROTO, False)
-                if client[1] not in udp_nat_port:
-                    # Well, there is a connection to the socket that, let's handle it
-                    # We create a reserve socket for this client, so every request from this client ()
+                        udp_over_tcp[client[1]] = reserve_socket
+                        threading._start_new_thread(
+                            listen_udp_forward_tcp_to_udp, (reserve_socket, sk, client[1]))
+                    else:
+                        try:
+                            reserve_socket = udp_over_tcp[client[1]]
+                            # log.debug(reserve_socket)
+                            reserve_socket.sendall(client[0])
+                        except:
+                            traceback.print_exc()
+                elif params[3] == 'udp':
+                    reserve_socket = create_socket(UDP_PROTO, False)
+                    if client[1] not in udp_nat_port:
+                        # Well, there is a connection to the socket that, let's handle it
+                        # We create a reserve socket for this client, so every request from this client ()
 
-                    # Established a connection from reserve UDP socket to destination socket, even UDP is a stateless protocol, we can still use system connect(2) method to make an UDP connection is "ESTABLISHED" --> the reserve UDP socket will accept only packet from destination --> That's the point, so we can avoid unwanted data
-                    reserve_socket.connect((params[4], int(params[5])))
-                    reserve_socket.sendall(client[0])
-                    # Get response from destination socket --> Because we have made an connection with destination socket, it might safe to receive data without checking original port and IP <3.
+                        # Established a connection from reserve UDP socket to destination socket, even UDP is a stateless protocol, we can still use system connect(2) method to make an UDP connection is "ESTABLISHED" --> the reserve UDP socket will accept only packet from destination --> That's the point, so we can avoid unwanted data
+                        reserve_socket.connect((params[4], int(params[5])))
+                        reserve_socket.sendall(client[0])
+                        # Get response from destination socket --> Because we have made an connection with destination socket, it might safe to receive data without checking original port and IP <3.
 
-                    server_msg = reserve_socket.recvfrom(udp_bufsize)
+                        server_msg = reserve_socket.recvfrom(udp_bufsize)
 
-                    # Add to map, so next time, if the same client send a request, we can get the correct reserve socket to send request to the destination
-                    udp_nat_port[client[1]] = reserve_socket
-                    udp_nat_port[server_msg[1]] = client[1]
+                        # Add to map, so next time, if the same client send a request, we can get the correct reserve socket to send request to the destination
+                        udp_nat_port[client[1]] = reserve_socket
+                        udp_nat_port[server_msg[1]] = client[1]
 
-                    # After we got the message, we cannot use the reserve socket to send data back to the client --> It will be rejected since sk is the socket that client connected to, not the reserve one, so we will use the sk to send data back to the client
-                    sk.sendto(server_msg[0], client[1])
+                        # After we got the message, we cannot use the reserve socket to send data back to the client --> It will be rejected since sk is the socket that client connected to, not the reserve one, so we will use the sk to send data back to the client
+                        sk.sendto(server_msg[0], client[1])
 
-                    # Create a new thread to handle message that is sent from destination to reserve socket
-                    thread = threading.Thread(target=forward_udp_to_udp, args=[
-                        sk, reserve_socket])
-                    thread.start()
-                # Client has sent data to the sk before (and we still have its reserve socket)
-                else:
-                    # Simply as shit, just get the reserve socket, and send data to the destination, but I'm wondering if this would block another connection as well ? Should I fork a thread to make sure others connection will be not blocked by this?
-                    reserve_socket = udp_nat_port.get(client[1])
-                    reserve_socket.sendall(client[0])
+                        # Create a new thread to handle message that is sent from destination to reserve socket
+                        thread = threading.Thread(target=forward_udp_to_udp, args=[
+                            sk, reserve_socket])
+                        thread.start()
+                    # Client has sent data to the sk before (and we still have its reserve socket)
+                    else:
+                        # Simply as shit, just get the reserve socket, and send data to the destination, but I'm wondering if this would block another connection as well ? Should I fork a thread to make sure others connection will be not blocked by this?
+                        reserve_socket = udp_nat_port.get(client[1])
+                        reserve_socket.sendall(client[0])
+        except:
+            traceback.print_exc()
 
 
 def forward_udp_to_udp(listen_socket: socket.socket, client_socket: socket.socket):
