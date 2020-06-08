@@ -325,10 +325,10 @@ def listen_tcp(params):
     sk.listen(5)
     # Add to the listening socket set
     listening_sockets.add(sk)
-    try:
-        while True:
+    while True:
+        try:
             # Accept connection from the client with 3-some handshake xD
-            client = sk.accept()[0]
+            client: socket.socket = sk.accept()[0]
             # Create a reserve socket, depend on target protocol, set it to the correct matter
             reserve_socket: socket.socket = None
             if params[3] == 'tcp':
@@ -350,9 +350,12 @@ def listen_tcp(params):
                     listen_tcp_forward_udp_to_tcp, (reserve_socket, client))
                 threading._start_new_thread(
                     listen_tcp_forward_tcp_to_udp, (client, reserve_socket))
-    except Exception as e:
-        # sk.shutdown(socket.SHUT_RD)
-        traceback.print_exc()
+        except Exception as e:
+            try:
+                client.shutdown(socket.SHUT_RD)
+            except:
+                pass
+            pass
 
 
 def forward_tcp_to_tcp(source, destination):
