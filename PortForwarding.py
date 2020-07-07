@@ -18,8 +18,8 @@ TCP_PROTO = 'tcp'
 UDP_PROTO = 'udp'
 log = logging.getLogger(__name__)
 config = None
-udp_bufsize = 1024 * 8
-tcp_bufsize = 1024 * 8
+udp_bufsize = 1024 * 64
+tcp_bufsize = 1024 * 64
 
 
 def init_config():
