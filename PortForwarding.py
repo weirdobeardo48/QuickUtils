@@ -421,7 +421,7 @@ def main():
                     if param not in running:
                         running.add(param)
                     else:
-                        log.info("%s is NAT-ed, Ignore!!" % param)
+                        log.info("%s is NAT-ed, Ignore!!" % str(param).strip())
                         continue
                     param = parse_params(param=param)
                     # log.info(param)
