@@ -361,7 +361,7 @@ def listen_tcp(params):
             pass
 
 
-def forward_tcp_to_tcp(source, destination):
+def forward_tcp_to_tcp(source: socket.socket, destination: socket.socket):
     try:
         log.debug("Ongoing connection route: %s ---> %s ---> %s" %
                   (source.getpeername(), source.getsockname(), destination.getpeername()))
