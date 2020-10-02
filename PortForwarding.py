@@ -161,14 +161,13 @@ def listen_udp(params):
                 elif params[3] == 'udp':
                     reserve_socket = create_socket(UDP_PROTO, False)
                     if client[1] not in udp_nat_port:
+                        
                         # Well, there is a connection to the socket that, let's handle it
-                        # We create a reserve socket for this client, so every request from this client ()
-
                         # Established a connection from reserve UDP socket to destination socket, even UDP is a stateless protocol, we can still use system connect(2) method to make an UDP connection is "ESTABLISHED" --> the reserve UDP socket will accept only packet from destination --> That's the point, so we can avoid unwanted data
                         reserve_socket.connect((params[4], int(params[5])))
                         reserve_socket.sendall(client[0])
-                        # Get response from destination socket --> Because we have made an connection with destination socket, it might safe to receive data without checking original port and IP <3.
 
+                        # Get response from destination socket --> Because we have made an connection with destination socket, it might safe to receive data without checking original port and IP <3.
                         server_msg = reserve_socket.recvfrom(udp_bufsize)
 
                         # Add to map, so next time, if the same client send a request, we can get the correct reserve socket to send request to the destination
@@ -343,7 +342,7 @@ def listen_tcp(params):
             log.debug("Routing connect: %s ---> %s ---> %s ---> %s" %
                       (client.getpeername(), client.getsockname(), reserve_socket.getsockname(), reserve_socket.getpeername()))
             if params[3] == 'tcp':
-                # Create 2 thread that handle bi-directional connection from client - reserve_socket
+                # Create 2 threads that handle bi-directional connection from client - reserve_socket
                 threading._start_new_thread(
                     forward_tcp_to_tcp, (client, reserve_socket))
                 threading._start_new_thread(
