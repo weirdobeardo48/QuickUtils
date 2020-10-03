@@ -1,3 +1,5 @@
+from tornado import web
+import websocket
 import argparse
 import requests
 import logging.config
@@ -28,7 +30,10 @@ if parser.x:
     proxyDict = {
         "http": parser.x
     }
+else:
+    proxyDict = {
 
+    }
 URL = parser.url
 
 log = logging.getLogger(__name__)
@@ -92,11 +97,11 @@ def init_log():
 
 
 def decode(input: str) -> str:
-    return fernet.decrypt(input.encode()).decode()
+    return fernet.decrypt(input.encode())
 
 
 def encode(input: str) -> str:
-    return fernet.encrypt(input.encode()).decode()
+    return fernet.encrypt(input.encode())
 
 
 def shutdown_socket(to_shutdown: socket.socket):
@@ -108,38 +113,36 @@ def shutdown_socket(to_shutdown: socket.socket):
         pass
 
 
-def get_and_forward_to_client(client: socket, id: str):
-    while True:
-        try:
-            r = requests.get(URL + "/" +
-                             (encode(id)), timeout=1200, proxies=proxyDict)
-            if r.status_code == 200:
-                ## log.info("Kaka " + str(r.content))
-                client.sendall(r.content)
-            else:
-                shutdown_socket(client)
-                return
-        except:
-            pass
-
-
-def listen_and_forward_to_http_server(client: socket, id: str):
-    #log.info(id)
-    while True:
-        message = ' '
+def listen_and_forward_to_websocket(client: socket, ws: websocket.WebSocket):
+    message = ' '
+    while message:
+        # log.info(client)
         message = client.recv(pw.tcp_bufsize)
         if message:
+            # log.info(type(message))
             try:
-                r = requests.post(URL + "/" +
-                                  (encode(id)), message, timeout=20, proxies=proxyDict)
-                if r.status_code != 200:
-                    shutdown_socket(client)
-                    break
+                ws.send_binary(message)
             except:
                 pass
         else:
             shutdown_socket(client)
+            try:
+                ws.close()
+            except:
+                pass
             break
+
+
+def listen_ws_and_forward_to_socket(client: socket, ws: websocket.WebSocket):
+    message = ' '
+    while message:
+        message = ws.recv()
+        if message:
+            # log.info(message)
+            client.sendall(message)
+        else:
+            #log.info("Dong cmn socket roi")
+            shutdown_socket(client)
 
 
 if __name__ == '__main__':
@@ -148,18 +151,20 @@ if __name__ == '__main__':
     listen_socket: socket.socket = pw.create_socket('tcp', True)
     listen_socket.bind((parser.host, int(parser.port)))
     listen_socket.listen(5)
-    # Add to the listening socket set
     SYMETRIC_KEY = read_symtrickey_from_file()
-    #log.info("Your symetric key: " + SYMETRIC_KEY)
+    log.info("Your symetric key: " + SYMETRIC_KEY)
     fernet = Fernet(SYMETRIC_KEY)
     while(True):
         client = listen_socket.accept()[0]
-        #log.info("OK GO ")
-        r = requests.get(URL + "/" +
-                         encode(parser.r), timeout=10, proxies=proxyDict)
-        #log.info(r.text)
-        if r.status_code == 201:
+        ws = websocket.WebSocket()
+
+        ws.connect(URL + "/",
+                   timeout=60, proxies=proxyDict)
+        ws.send(encode(parser.r))
+        message = ws.recv()
+        if message == 'OK':
+            log.info("Successfully tunnel")
             threading._start_new_thread(
-                get_and_forward_to_client, (client, r.text))
+                listen_and_forward_to_websocket, (client, ws))
             threading._start_new_thread(
-                listen_and_forward_to_http_server, (client, r.text))
+                listen_ws_and_forward_to_socket, (client, ws))

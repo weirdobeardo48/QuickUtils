@@ -1,9 +1,14 @@
+import asyncio
 import random
 from socket import SHUT_RD
 import os
-import sys
-sys.path.insert(0, os.getcwd())
-from PortForwarding import PortForwarding as pw
+import threading
+import traceback
+from six import binary_type
+if __name__ == '__main__':
+    import sys
+    sys.path.insert(0, os.getcwd())
+    from PortForwarding import PortForwarding as pw
 from tornado.web import Application, RequestHandler
 from typing import Dict
 from cryptography.fernet import Fernet
@@ -11,6 +16,7 @@ from concurrent.futures import ThreadPoolExecutor
 from tornado.concurrent import run_on_executor
 from tornado.web import Application, RequestHandler, escape, gen
 from tornado.ioloop import IOLoop
+import tornado.websocket as ws
 import socket
 import configparser
 import logging
@@ -26,6 +32,7 @@ SYMETRIC_KEY: str = ''
 fernet: Fernet = None
 
 mapping_connection: Dict = {}
+mapping_ws_clients: Dict = {}
 
 
 def read_symtrickey_from_file() -> str:
@@ -90,7 +97,73 @@ def encode(input: str) -> str:
     return fernet.encrypt(input.encode())
 
 
-class ProxyForwardHandler(RequestHandler):
+def forward_packet_to_ws_client(reserved_socket: socket.socket, ws: ws.WebSocketHandler):
+    asyncio.set_event_loop(asyncio.new_event_loop())
+    message = ' '
+    while message:
+        message = reserved_socket.recv(pw.tcp_bufsize)
+        #log.info("VCL  " + str(message))
+        if message:
+            ws.write_message(message=message, binary=binary_type)
+        else:
+            try:
+                reserved_socket.shutdown(SHUT_RD)
+            except:
+                pass
+            try:
+                ws.close()
+                pass
+            except:
+                pass
+    pass
+
+
+class WebsocketTunnelHandler(ws.WebSocketHandler):
+
+    def open(self):
+        log.info("Client connected")
+
+    def on_message(self, message):
+        #log.info("VCL SELF: " + str(self))
+        if self in mapping_ws_clients:
+            #log.info("AAAAAAAA " + str(type(message)))
+            mapping_ws_clients[self].sendall(message)
+        else:
+            # Client connect to server for the first time, and its first message should be ask for tunneling something
+            decode_request = decode(message).decode()
+            if len(decode_request.split(":")) == 3:
+                decode_request = decode_request.split(":")
+                proto, dest_ip, dest_port = decode_request[0], decode_request[1], decode_request[2]
+                #log.info(decode_request)
+                reserved_socket: socket.socket = pw.create_socket(proto, False)
+                try:
+                    reserved_socket.connect((dest_ip, int(dest_port)))
+                    #log.info(reserved_socket)
+                    # Success ?? Good, add this connection to mapping_ws_client
+                    mapping_ws_clients[self] = reserved_socket
+                    self.write_message("OK")
+                    threading._start_new_thread(
+                        forward_packet_to_ws_client, (reserved_socket, self))
+                except Exception as e:
+                    traceback.print_exc()
+                    self.write_message("Failed, please check it in server log")
+                    self.close()
+
+            else:
+                # Suspicious user, close our socket madafaka
+                self.close()
+
+    def on_close(self):
+        #log.info("WebSocket closed")
+        self.close()
+        del mapping_ws_clients[self]
+        try:
+            mapping_ws_clients[self].shutdown(SHUT_RD)
+        except:
+            pass
+
+
+class HTTPPlainTunnelHandler(RequestHandler):
 
     executor = ThreadPoolExecutor(max_workers=50)
 
@@ -110,14 +183,14 @@ class ProxyForwardHandler(RequestHandler):
         request_parse = self.request.path
         request_parse = request_parse[1:]
         decode_request = decode(request_parse).decode()
-        #log.info("DAY LA REQUEST: " + decode_request)
+        ## log.info("DAY LA REQUEST: " + decode_request)
         # If the request is not in the map, it does look like that it's a new port forwarding request
         if decode_request in mapping_connection:
             data: socket.socket = mapping_connection[decode_request]
             message = data.recv(pw.tcp_bufsize)
-            # log.info(message)
+            ## log.info(message)
             if message:
-                #log.info("Co send voi " + str(message))
+                ## log.info("Co send voi " + str(message))
                 self.set_status(200)
                 self.write(message)
             else:
@@ -130,14 +203,14 @@ class ProxyForwardHandler(RequestHandler):
             return
         if len(decode_request.split(":")) == 3:
             decode_request = decode_request.split(":")
-            # log.info(decode_request)
+            ## log.info(decode_request)
             proto, dest_ip, dest_port = decode_request[0], decode_request[1], decode_request[2]
             # Create a reserve socket then connect it to remote endpoint
             reserved_socket: socket.socket = pw.create_socket(proto, False)
             reserved_socket.connect((dest_ip, int(dest_port)))
             random_key = random.randint(0, 9999999)
             mapping_connection[str(random_key)] = reserved_socket
-            # log.info(reserved_socket)
+            ## log.info(reserved_socket)
             # From now on, we will use this key as a long-polling GET method to get reponse from server
             self.set_status(201)
             self.write(str(random_key))
@@ -150,7 +223,7 @@ class ProxyForwardHandler(RequestHandler):
         request_parse = self.request.path
         request_parse = request_parse[1:]
         decode_request = decode(request_parse).decode()
-        # log.info(decode_request)
+        ## log.info(decode_request)
         # If the request is not in the list, it does look like that it's a new port forwarding request
         if decode_request in mapping_connection:
             data: socket.socket = mapping_connection[decode_request]
@@ -161,7 +234,8 @@ class ProxyForwardHandler(RequestHandler):
 
 
 def make_app():
-    urls = [(r'/.*', ProxyForwardHandler)]
+    urls = [(r'/[a-z]', HTTPPlainTunnelHandler),
+            (r'/cs/.*', WebsocketTunnelHandler)]
     return Application(urls, debug=True)
 
 
