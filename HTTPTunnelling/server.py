@@ -1,5 +1,8 @@
 import random
 from socket import SHUT_RD
+import os
+import sys
+sys.path.insert(0, os.getcwd())
 from PortForwarding import PortForwarding as pw
 from tornado.web import Application, RequestHandler
 from typing import Dict
@@ -12,9 +15,6 @@ import socket
 import configparser
 import logging
 import logging.config
-import os
-import sys
-sys.path.insert(0, os.getcwd())
 TCP_PROTO = 'tcp'
 UDP_PROTO = 'udp'
 log = logging.getLogger(__name__)
