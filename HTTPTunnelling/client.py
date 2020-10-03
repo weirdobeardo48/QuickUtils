@@ -124,7 +124,7 @@ def get_and_forward_to_client(client: socket, id: str):
 
 
 def listen_and_forward_to_http_server(client: socket, id: str):
-    #log.info(id)
+    # log.info(id)
     while True:
         message = ' '
         message = client.recv(pw.tcp_bufsize)
@@ -156,8 +156,8 @@ if __name__ == '__main__':
         client = listen_socket.accept()[0]
         #log.info("OK GO ")
         r = requests.get(URL + "/" +
-                         encode(parser.r), timeout=10, proxies=proxyDict)
-        #log.info(r.text)
+                         encode(parser.r), timeout=10, proxies=proxyDict, verify=False)
+        # log.info(r.text)
         if r.status_code == 201:
             threading._start_new_thread(
                 get_and_forward_to_client, (client, r.text))

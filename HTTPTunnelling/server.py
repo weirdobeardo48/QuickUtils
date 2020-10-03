@@ -234,7 +234,7 @@ class HTTPPlainTunnelHandler(RequestHandler):
 
 
 def make_app():
-    urls = [(r'/[a-z]', HTTPPlainTunnelHandler),
+    urls = [(r'/[^\/]+', HTTPPlainTunnelHandler),
             (r'/cs/.*', WebsocketTunnelHandler)]
     return Application(urls, debug=True)
 

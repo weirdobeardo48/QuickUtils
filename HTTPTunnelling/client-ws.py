@@ -1,3 +1,4 @@
+import traceback
 from tornado import web
 import websocket
 import argparse
@@ -15,6 +16,7 @@ import sys
 import os
 if __name__ == '__main__':
     sys.path.insert(0, os.getcwd())
+    print(os.getcwd())
     from PortForwarding import PortForwarding as pw
 
 if __name__ == '__main__':
@@ -26,14 +28,6 @@ if __name__ == '__main__':
     parser.add_argument("-r", help="protocol:host:port", required=True)
     parser.add_argument("--url", help="Your Proxy Pass URL xD", required=True)
     parser = parser.parse_args()
-if parser.x:
-    proxyDict = {
-        "http": parser.x
-    }
-else:
-    proxyDict = {
-
-    }
 URL = parser.url
 
 log = logging.getLogger(__name__)
@@ -155,16 +149,32 @@ if __name__ == '__main__':
     log.info("Your symetric key: " + SYMETRIC_KEY)
     fernet = Fernet(SYMETRIC_KEY)
     while(True):
-        client = listen_socket.accept()[0]
-        ws = websocket.WebSocket()
-
-        ws.connect(URL + "/",
-                   timeout=60, proxies=proxyDict)
-        ws.send(encode(parser.r))
-        message = ws.recv()
-        if message == 'OK':
-            log.info("Successfully tunnel")
-            threading._start_new_thread(
-                listen_and_forward_to_websocket, (client, ws))
-            threading._start_new_thread(
-                listen_ws_and_forward_to_socket, (client, ws))
+        try:
+            client = listen_socket.accept()[0]
+            ws = websocket.WebSocket()
+            # If proxy is required? Then parse it
+            http_proxy_host = ''
+            http_proxy_port = 1
+            if parser.x:
+                proxy = parser.x
+                proxy = proxy.split(":")
+                if len(proxy) == 2:
+                    http_proxy_host = proxy[0]
+                    http_proxy_port = proxy[1]
+            if parser.x:
+                log.info("Connecting via proxy " + str(proxy))
+                ws.connect(URL + "/",
+                           timeout=60, http_proxy_host=http_proxy_host, http_proxy_port=http_proxy_port)
+            else:
+                ws.connect(URL + "/",
+                           timeout=60)
+            ws.send(encode(parser.r))
+            message = ws.recv()
+            if message == 'OK':
+                log.info("Successfully tunnel")
+                threading._start_new_thread(
+                    listen_and_forward_to_websocket, (client, ws))
+                threading._start_new_thread(
+                    listen_ws_and_forward_to_socket, (client, ws))
+        except Exception as e:
+            traceback.print_exc()
