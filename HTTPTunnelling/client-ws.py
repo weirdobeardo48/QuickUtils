@@ -1,4 +1,5 @@
 import traceback
+import ssl
 from tornado import web
 import websocket
 import argparse
@@ -14,6 +15,7 @@ import threading
 import socket
 import sys
 import os
+
 if __name__ == '__main__':
     sys.path.insert(0, os.getcwd())
     print(os.getcwd())
@@ -161,6 +163,10 @@ if __name__ == '__main__':
                 if len(proxy) == 2:
                     http_proxy_host = proxy[0]
                     http_proxy_port = proxy[1]
+                else:
+                    log.info(
+                        "Proxy should be informat http_host:http_port (1.1.1.1:80)")
+                    sys.exit(1)
             if parser.x:
                 log.info("Connecting via proxy " + str(proxy))
                 ws.connect(URL + "/",
@@ -177,4 +183,5 @@ if __name__ == '__main__':
                 threading._start_new_thread(
                     listen_ws_and_forward_to_socket, (client, ws))
         except Exception as e:
+            log.error(e)
             traceback.print_exc()
