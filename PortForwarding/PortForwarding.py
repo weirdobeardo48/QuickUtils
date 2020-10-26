@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 """
 This script is written By TruongNX to bypass several inspection tools at work. Use it at your own risk! Kaka
 """
