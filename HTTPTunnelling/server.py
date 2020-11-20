@@ -8,7 +8,7 @@ from six import binary_type
 if __name__ == '__main__':
     import sys
     sys.path.insert(0, os.getcwd())
-    from PortForwarding import PortForwarding as pw
+    from PortForwarding import SimplePortForwarding as pw
 from tornado.web import Application, RequestHandler
 from typing import Dict
 from cryptography.fernet import Fernet

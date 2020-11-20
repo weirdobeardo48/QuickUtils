@@ -13,7 +13,7 @@ import sys
 import os
 if __name__ == '__main__':
     sys.path.insert(0, os.getcwd())
-    from PortForwarding import PortForwarding as pw
+    from PortForwarding import SimplePortForwarding as pw
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
