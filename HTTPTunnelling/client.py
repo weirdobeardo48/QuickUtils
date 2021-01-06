@@ -153,13 +153,16 @@ if __name__ == '__main__':
     #log.info("Your symetric key: " + SYMETRIC_KEY)
     fernet = Fernet(SYMETRIC_KEY)
     while(True):
-        client = listen_socket.accept()[0]
-        #log.info("OK GO ")
-        r = requests.get(URL + "/" +
-                         encode(parser.r), timeout=10, proxies=proxyDict, verify=False)
-        # log.info(r.text)
-        if r.status_code == 201:
-            threading._start_new_thread(
-                get_and_forward_to_client, (client, r.text))
-            threading._start_new_thread(
-                listen_and_forward_to_http_server, (client, r.text))
+        try:
+            client = listen_socket.accept()[0]
+            #log.info("OK GO ")
+            r = requests.get(URL + "/" +
+                            encode(parser.r), timeout=10, proxies=proxyDict, verify=False)
+            # log.info(r.text)
+            if r.status_code == 201:
+                threading._start_new_thread(
+                    get_and_forward_to_client, (client, r.text))
+                threading._start_new_thread(
+                    listen_and_forward_to_http_server, (client, r.text))
+        except Exception as e:
+            log.exception(e)
