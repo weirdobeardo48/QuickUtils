@@ -3,7 +3,6 @@ from config.init_config import ConfigUtils
 from logger.get_logger import LoggerUtils
 import random
 from socket import SHUT_RD
-import os
 import threading
 import traceback
 from six import binary_type

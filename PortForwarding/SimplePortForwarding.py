@@ -25,9 +25,8 @@ tcp_bufsize = 1024 * 64
 logger_utils = LoggerUtils()
 config_utils = ConfigUtils()
 
-if __name__ == "__main__":
-    config = config_utils.get_configparser("./config/configs.ini")
-    log = logger_utils.init_log(config=config)
+config = config_utils.get_configparser("./config/configs.ini")
+log = logger_utils.init_log(config=config)
 
 # Since config has been initinated, let's check if user want to change the buffer size
 
