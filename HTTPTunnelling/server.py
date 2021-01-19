@@ -1,14 +1,13 @@
 import asyncio
+from config.init_config import ConfigUtils
+from logger.get_logger import LoggerUtils
 import random
 from socket import SHUT_RD
 import os
 import threading
 import traceback
 from six import binary_type
-if __name__ == '__main__':
-    import sys
-    sys.path.insert(0, os.getcwd())
-    from PortForwarding import SimplePortForwarding as pw
+from PortForwarding import SimplePortForwarding as pw
 from tornado.web import Application, RequestHandler
 from typing import Dict
 from cryptography.fernet import Fernet
@@ -18,7 +17,6 @@ from tornado.web import Application, RequestHandler, escape, gen
 from tornado.ioloop import IOLoop
 import tornado.websocket as ws
 import socket
-import configparser
 import logging
 import logging.config
 TCP_PROTO = 'tcp'
@@ -40,53 +38,12 @@ def read_symtrickey_from_file() -> str:
         return f.readline()
 
 
-def init_config():
-    # print('Loading config at startup!')
-    global config
-    config = configparser.ConfigParser()
-    config.read('config/configs.ini')
+logger_utils = LoggerUtils()
+config_utils = ConfigUtils()
 
-
-def init_log():
-    global config
-    # Just a workaround, but whatever, this is just a cheap script
-    if os.path.join(config['LOGGER']['log_file_path']):
-        if not os.path.exists(os.path.join(config['LOGGER']['log_file_path'])):
-            os.makedirs(os.path.join(config['LOGGER']['log_file_path']))
-    logging_config = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'formatters': {
-            'standard': {
-                'format': '%(asctime)s [%(levelname)s] %(name)s: %(lineno)d: %(message)s'
-            },
-        },
-        'handlers': {
-            'default_handler': {
-                'class': 'logging.handlers.TimedRotatingFileHandler',
-                'level': config['LOGGER']['file_log_level'],
-                'formatter': 'standard',
-                'filename': os.path.join(config['LOGGER']['log_file_path'], 'application.log'),
-                'encoding': 'utf8',
-                'backupCount': 10,
-                'when': 'd',
-                'interval': 1,
-            },
-            'stdout_handler': {
-                'class': 'logging.StreamHandler',
-                'level': config['LOGGER']['std_out_log_level'],
-                'formatter': 'standard'
-            }
-        },
-        'loggers': {
-            '': {
-                'handlers': ['default_handler', 'stdout_handler'],
-                'level': config['LOGGER']['default_log_level'],
-                'propagate': False
-            }
-        }
-    }
-    logging.config.dictConfig(logging_config)
+if __name__ == "__main__":
+    config = config_utils.get_configparser("./config/configs.ini")
+    log = logger_utils.init_log(config=config)
 
 
 def decode(input: str) -> str:
@@ -134,11 +91,11 @@ class WebsocketTunnelHandler(ws.WebSocketHandler):
             if len(decode_request.split(":")) == 3:
                 decode_request = decode_request.split(":")
                 proto, dest_ip, dest_port = decode_request[0], decode_request[1], decode_request[2]
-                #log.info(decode_request)
+                # log.info(decode_request)
                 reserved_socket: socket.socket = pw.create_socket(proto, False)
                 try:
                     reserved_socket.connect((dest_ip, int(dest_port)))
-                    #log.info(reserved_socket)
+                    # log.info(reserved_socket)
                     # Success ?? Good, add this connection to mapping_ws_client
                     mapping_ws_clients[self] = reserved_socket
                     self.write_message("OK")
@@ -188,7 +145,7 @@ class HTTPPlainTunnelHandler(RequestHandler):
         if decode_request in mapping_connection:
             data: socket.socket = mapping_connection[decode_request]
             message = data.recv(pw.tcp_bufsize)
-            ## log.info(message)
+            # log.info(message)
             if message:
                 ## log.info("Co send voi " + str(message))
                 self.set_status(200)
@@ -203,14 +160,14 @@ class HTTPPlainTunnelHandler(RequestHandler):
             return
         if len(decode_request.split(":")) == 3:
             decode_request = decode_request.split(":")
-            ## log.info(decode_request)
+            # log.info(decode_request)
             proto, dest_ip, dest_port = decode_request[0], decode_request[1], decode_request[2]
             # Create a reserve socket then connect it to remote endpoint
             reserved_socket: socket.socket = pw.create_socket(proto, False)
             reserved_socket.connect((dest_ip, int(dest_port)))
             random_key = random.randint(0, 9999999)
             mapping_connection[str(random_key)] = reserved_socket
-            ## log.info(reserved_socket)
+            # log.info(reserved_socket)
             # From now on, we will use this key as a long-polling GET method to get reponse from server
             self.set_status(201)
             self.write(str(random_key))
@@ -223,7 +180,7 @@ class HTTPPlainTunnelHandler(RequestHandler):
         request_parse = self.request.path
         request_parse = request_parse[1:]
         decode_request = decode(request_parse).decode()
-        ## log.info(decode_request)
+        # log.info(decode_request)
         # If the request is not in the list, it does look like that it's a new port forwarding request
         if decode_request in mapping_connection:
             data: socket.socket = mapping_connection[decode_request]
@@ -240,8 +197,6 @@ def make_app():
 
 
 if __name__ == "__main__":
-    init_config()
-    init_log()
     SYMETRIC_KEY = read_symtrickey_from_file()
     fernet = Fernet(SYMETRIC_KEY)
     app = make_app()

@@ -2,7 +2,9 @@
 """
 This script is written By TruongNX to bypass several inspection tools at work. Use it at your own risk! Kaka
 """
-import time
+from configparser import ConfigParser
+from logger.get_logger import LoggerUtils
+from config.init_config import ConfigUtils
 import re
 import socket
 import sys
@@ -11,26 +13,21 @@ import time
 import traceback
 import logging
 import logging.config
-import os
-import configparser
 
 TCP_PROTO = 'tcp'
 UDP_PROTO = 'udp'
 log = logging.getLogger(__name__)
-config = None
+config: ConfigParser = None
 udp_bufsize = 1024 * 64
 tcp_bufsize = 1024 * 64
 
 
-def init_config():
-    # print('Loading config at startup!')
-    global config
-    config = configparser.ConfigParser()
-    config.read('config/configs.ini')
+logger_utils = LoggerUtils()
+config_utils = ConfigUtils()
 
-
-# Init config right away
-init_config()
+if __name__ == "__main__":
+    config = config_utils.get_configparser("./config/configs.ini")
+    log = logger_utils.init_log(config=config)
 
 # Since config has been initinated, let's check if user want to change the buffer size
 
@@ -59,48 +56,6 @@ listening_sockets = set()
 # Mapping UDP NAT PORT
 udp_nat_port = {}
 udp_over_tcp = {}
-
-
-def init_log():
-    global config
-    # Just a workaround, but whatever, this is just a cheap script
-    if os.path.join(config['LOGGER']['log_file_path']):
-        if not os.path.exists(os.path.join(config['LOGGER']['log_file_path'])):
-            os.makedirs(os.path.join(config['LOGGER']['log_file_path']))
-    logging_config = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'formatters': {
-            'standard': {
-                'format': '%(asctime)s [%(levelname)s] %(name)s: %(lineno)d: %(message)s'
-            },
-        },
-        'handlers': {
-            'default_handler': {
-                'class': 'logging.handlers.TimedRotatingFileHandler',
-                'level': config['LOGGER']['file_log_level'],
-                'formatter': 'standard',
-                'filename': os.path.join(config['LOGGER']['log_file_path'], 'application.log'),
-                'encoding': 'utf8',
-                'backupCount': 10,
-                'when': 'd',
-                'interval': 1,
-            },
-            'stdout_handler': {
-                'class': 'logging.StreamHandler',
-                'level': config['LOGGER']['std_out_log_level'],
-                'formatter': 'standard'
-            }
-        },
-        'loggers': {
-            '': {
-                'handlers': ['default_handler', 'stdout_handler'],
-                'level': config['LOGGER']['default_log_level'],
-                'propagate': False
-            }
-        }
-    }
-    logging.config.dictConfig(logging_config)
 
 
 def create_socket(socket_type: str, is_listen_port: bool) -> socket.socket:
@@ -161,7 +116,7 @@ def listen_udp(params):
                 elif params[3] == 'udp':
                     reserve_socket = create_socket(UDP_PROTO, False)
                     if client[1] not in udp_nat_port:
-                        
+
                         # Well, there is a connection to the socket that, let's handle it
                         # Established a connection from reserve UDP socket to destination socket, even UDP is a stateless protocol, we can still use system connect(2) method to make an UDP connection is "ESTABLISHED" --> the reserve UDP socket will accept only packet from destination --> That's the point, so we can avoid unwanted data
                         reserve_socket.connect((params[4], int(params[5])))
@@ -464,7 +419,7 @@ def main():
 
 if __name__ == '__main__':
     # Init the fucking log
-    init_log()
+
     # And start the program
     main()
 

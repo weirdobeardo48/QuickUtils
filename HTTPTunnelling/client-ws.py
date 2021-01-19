@@ -1,3 +1,5 @@
+from config.init_config import ConfigUtils
+from logger.get_logger import LoggerUtils
 import traceback
 import ssl
 from tornado import web
@@ -15,11 +17,7 @@ import threading
 import socket
 import sys
 import os
-
-if __name__ == '__main__':
-    sys.path.insert(0, os.getcwd())
-    print(os.getcwd())
-    from PortForwarding import SimplePortForwarding as pw
+from PortForwarding import SimplePortForwarding as pw
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -43,53 +41,12 @@ def read_symtrickey_from_file() -> str:
         return f.readline()
 
 
-def init_config():
-    # print('Loading config at startup!')
-    global config
-    config = configparser.ConfigParser()
-    config.read('config/configs.ini')
+logger_utils = LoggerUtils()
+config_utils = ConfigUtils()
 
-
-def init_log():
-    global config
-    # Just a workaround, but whatever, this is just a cheap script
-    if os.path.join(config['LOGGER']['log_file_path']):
-        if not os.path.exists(os.path.join(config['LOGGER']['log_file_path'])):
-            os.makedirs(os.path.join(config['LOGGER']['log_file_path']))
-    logging_config = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'formatters': {
-            'standard': {
-                'format': '%(asctime)s [%(levelname)s] %(name)s: %(lineno)d: %(message)s'
-            },
-        },
-        'handlers': {
-            'default_handler': {
-                'class': 'logging.handlers.TimedRotatingFileHandler',
-                'level': config['LOGGER']['file_log_level'],
-                'formatter': 'standard',
-                'filename': os.path.join(config['LOGGER']['log_file_path'], 'application.log'),
-                'encoding': 'utf8',
-                'backupCount': 10,
-                'when': 'd',
-                'interval': 1,
-            },
-            'stdout_handler': {
-                'class': 'logging.StreamHandler',
-                'level': config['LOGGER']['std_out_log_level'],
-                'formatter': 'standard'
-            }
-        },
-        'loggers': {
-            '': {
-                'handlers': ['default_handler', 'stdout_handler'],
-                'level': config['LOGGER']['default_log_level'],
-                'propagate': False
-            }
-        }
-    }
-    logging.config.dictConfig(logging_config)
+if __name__ == "__main__":
+    config = config_utils.get_configparser("./config/configs.ini")
+    log = logger_utils.init_log(config=config)
 
 
 def decode(input: str) -> str:
@@ -142,8 +99,6 @@ def listen_ws_and_forward_to_socket(client: socket, ws: websocket.WebSocket):
 
 
 if __name__ == '__main__':
-    init_config()
-    init_log()
     listen_socket: socket.socket = pw.create_socket('tcp', True)
     listen_socket.bind((parser.host, int(parser.port)))
     listen_socket.listen(5)
