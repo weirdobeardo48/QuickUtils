@@ -9,7 +9,6 @@ import re
 import socket
 import sys
 import threading
-import time
 import traceback
 import logging
 import logging.config
@@ -26,7 +25,10 @@ logger_utils = LoggerUtils()
 config_utils = ConfigUtils()
 
 config = config_utils.get_configparser("./config/configs.ini")
-log = logger_utils.init_log(config=config)
+if __name__ == "__main__":
+    logger_utils.init_log(config=config)
+
+log = logging.getLogger(__name__)
 
 # Since config has been initinated, let's check if user want to change the buffer size
 
@@ -359,7 +361,6 @@ def main():
     while True:  # For whatever happen, even the sky is falling down, keep the program alive xD
         if command == "reload":
             # Reload the config, you might need to restart to apply new config to old forward session.
-            init_config()
             try:
                 log.info("Forwarding!!!!!!!!!!!!!!")
                 # Now read list to forward file from config.

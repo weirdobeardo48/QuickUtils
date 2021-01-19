@@ -42,7 +42,7 @@ config_utils = ConfigUtils()
 
 if __name__ == "__main__":
     config = config_utils.get_configparser("./config/configs.ini")
-    log = logger_utils.init_log(config=config)
+    logger_utils.init_log(config=config)
 
 
 def decode(input: str) -> str:

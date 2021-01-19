@@ -1,15 +1,11 @@
 from config.init_config import ConfigUtils
-from logger.get_logger import LoggerUtils
 import traceback
 import ssl
 from tornado import web
 import websocket
 import argparse
-import requests
 import logging.config
 import logging
-import configparser
-import tornado
 from cryptography.fernet import Fernet
 from socket import SHUT_RD, timeout
 from concurrent.futures import thread
@@ -41,12 +37,11 @@ def read_symtrickey_from_file() -> str:
         return f.readline()
 
 
-logger_utils = LoggerUtils()
 config_utils = ConfigUtils()
 
 if __name__ == "__main__":
     config = config_utils.get_configparser("./config/configs.ini")
-    log = logger_utils.init_log(config=config)
+log = logging.getLogger(__name__)
 
 
 def decode(input: str) -> str:

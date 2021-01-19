@@ -4,15 +4,11 @@ from logger.get_logger import LoggerUtils
 import requests
 import logging.config
 import logging
-import configparser
-import tornado
 from cryptography.fernet import Fernet
 from socket import SHUT_RD, timeout
 from concurrent.futures import thread
 import threading
 import socket
-import sys
-import os
 from PortForwarding import SimplePortForwarding as pw
 
 if __name__ == '__main__':
@@ -41,13 +37,10 @@ def read_symtrickey_from_file() -> str:
     with open('./files/symetric.key', 'r') as f:
         return f.readline()
 
-
-logger_utils = LoggerUtils()
 config_utils = ConfigUtils()
 
 if __name__ == "__main__":
     config = config_utils.get_configparser("./config/configs.ini")
-    log = logger_utils.init_log(config=config)
 
 
 def decode(input: str) -> str:
