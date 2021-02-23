@@ -34,8 +34,9 @@ class XamVN:
         all_link = set()
         for element in elements:
             # link = element.get_attribute('src')
-            link = element['src']
-            if link is None:
+            if 'src' in element:
+                link = element['src']
+            elif 'href' in element:
                 link = element['href']
             
             if link is not None and not str(link).startswith("http"):
