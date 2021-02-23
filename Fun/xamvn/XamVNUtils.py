@@ -34,7 +34,12 @@ class XamVN:
         all_link = set()
         for element in elements:
             # link = element.get_attribute('src')
-            link = element['src']
+            link = None
+            if 'src' in element:
+                link = element['src']
+            elif 'href' in element:
+                link = element['href']
+
             if link is not None and not str(link).startswith("http"):
                 link = "https://xamvn.us" + link
             # Getting images that are uploaded by user, or embed by users, not avatar, logo, blah
@@ -83,7 +88,12 @@ class XamVN:
 
             soup = BeautifulSoup(req.text, "html.parser")
             images = soup.find_all('img')
+            images_from_a_tag = soup.find_all('a')
+            if len(images_from_a_tag) != 0:
+                for img in images_from_a_tag:
+                    images.append(img)
 
+            # iamges_from_zoomer = soup.find_all()
             # Set headers to request headers
             # Get all the images
             if len(images) != 0:
