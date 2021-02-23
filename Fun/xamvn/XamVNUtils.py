@@ -64,7 +64,7 @@ class XamVN:
                     file.write(req.content)
                 self.__log.info("Done getting URL: %s" % link)
 
-    def crawl(self,):
+    def crawl(self):
         # Get URL, to get some cookies, blah blah, and parse them to the fucking request
         self.__current_page = 1
         if self.__from_page is not None:
