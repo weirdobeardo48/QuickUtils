@@ -12,6 +12,8 @@ class XamVN:
     __cookies: dict = None
     f = requests.Session()
     __log = logging.getLogger(__name__)
+    # Well, not resource friendly, but WTH
+    __all_link = set()
 
     def __init__(self, headers: dict, cookies: dict) -> None:
         self.__requests_headers = headers
@@ -44,7 +46,9 @@ class XamVN:
                 link = "https://xamvn.us" + link
             # Getting images that are uploaded by user, or embed by users, not avatar, logo, blah
             if link is not None and ('attachments' in link or 'proxy.php' in link or 'video' in link):
-                all_link.add(link)
+                if link not in self.__all_link:
+                    all_link.add(link)
+                    self.__all_link.add(link)
 
         for link in all_link:
             self.__log.info("Getting URL: %s" % link)
