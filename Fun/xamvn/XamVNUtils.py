@@ -43,7 +43,7 @@ class XamVN:
             if link is not None and not str(link).startswith("http"):
                 link = "https://xamvn.us" + link
             # Getting images that are uploaded by user, or embed by users, not avatar, logo, blah
-            if 'attachments' in link or 'proxy.php' in link or 'video' in link:
+            if link is not None and ('attachments' in link or 'proxy.php' in link or 'video' in link):
                 all_link.add(link)
 
         for link in all_link:
