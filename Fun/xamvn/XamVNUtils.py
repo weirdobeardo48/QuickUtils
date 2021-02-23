@@ -35,10 +35,10 @@ class XamVN:
         for element in elements:
             # link = element.get_attribute('src')
             link = None
-            if 'src' in element:
-                link = element['src']
-            elif 'href' in element:
-                link = element['href']
+            if 'src' in element.attrs:
+                link = element.attrs['src']
+            elif 'href' in element.attrs:
+                link = element.attrs['href']
 
             if link is not None and not str(link).startswith("http"):
                 link = "https://xamvn.us" + link
