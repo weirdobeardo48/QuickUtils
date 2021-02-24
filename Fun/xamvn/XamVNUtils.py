@@ -39,7 +39,9 @@ class XamVN:
                 "http": kwargs['proxy'], "https": kwargs['proxy'], "ftp": kwargs['proxy']}
 
     def get(self, url):
+        self.__log.info("Downloading from URL: %s", url)
         if self.__use_proxy:
+            self.__log.info("Using proxy: %s" % str(self.__proxy))
             self.f.get(
                 url, headers=self.__requests_headers, cookies=self.__cookies, timeout=self.__default_timeout, proxies=self.__proxy)
         else:
@@ -76,7 +78,7 @@ class XamVN:
             req = self.get(link)
             self.__log.info("Status code: " + str(req.status_code))
             if req.status_code == 200:
-                self.__log.info("Downloading from URL: %s", link)
+
                 if not os.path.exists(
                         os.path.join(self.__config['XAMVN']['default-download-dir'], str(self.__current_page))):
                     os.makedirs(
