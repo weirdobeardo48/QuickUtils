@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import time
 import traceback
 
+
 class XamVN:
     __default_timeout = 30
     __current_page = 1
@@ -17,6 +18,12 @@ class XamVN:
 
     __use_proxy = False
     __proxy: dict = None
+
+    # Output folder
+    __output_folder = None
+
+    # Interval between crawl
+    __interval_between_crawl = 1
 
     def __init__(self, headers: dict, cookies: dict) -> None:
         self.__requests_headers = headers
@@ -31,12 +38,14 @@ class XamVN:
             self.__from_page = kwargs['from_page']
         if 'to_page' in kwargs:
             self.__to_page = kwargs['to_page']
-        if 'config' in kwargs:
-            self.__config = kwargs['config']
         if 'proxy' in kwargs:
             self.__use_proxy = True
             self.__proxy = {
                 "http": kwargs['proxy'], "https": kwargs['proxy'], "ftp": kwargs['proxy']}
+        if 'output_folder' in kwargs:
+            self.__output_folder = kwargs['output_folder']
+        if 'interval' in kwargs:
+            self.__interval_between_crawl = int(kwargs['interval'])
 
     def get(self, url):
         self.__log.info("Downloading from URL: %s", url)
@@ -74,9 +83,8 @@ class XamVN:
             self.__log.info("Getting URL: %s" % link)
 
             self.__log.info("Sleeping for %s second" %
-                            str(self.__config['CHROME-DRIVER']['interval-between-crawl']))
-            time.sleep(int(self.__config['CHROME-DRIVER']
-                           ['interval-between-crawl']))
+                            str(self.__interval_between_crawl))
+            time.sleep(self.__interval_between_crawl)
             count += 1
             try:
                 req = self.get(link)
@@ -84,12 +92,12 @@ class XamVN:
                 if req.status_code == 200:
 
                     if not os.path.exists(
-                            os.path.join(self.__config['XAMVN']['default-download-dir'], str(self.__current_page))):
+                            os.path.join(self.__output_folder, str(self.__current_page))):
                         os.makedirs(
-                            os.path.join(self.__config['XAMVN']['default-download-dir'], str(self.__current_page)))
+                            os.path.join(self.__output_folder, str(self.__current_page)))
                     file_type = str(req.headers['Content-Type']).split('/')[-1]
-                    with open(os.path.join(self.__config['XAMVN']['default-download-dir'], str(self.__current_page),
-                                        str(count) + "." + file_type), 'wb') as file:
+                    with open(os.path.join(self.__output_folder, str(self.__current_page),
+                                           str(count) + "." + file_type), 'wb') as file:
                         file.write(req.content)
                     self.__log.info("Done getting URL: %s" % link)
             except Exception as e:

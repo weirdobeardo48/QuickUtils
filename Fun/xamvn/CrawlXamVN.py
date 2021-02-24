@@ -24,13 +24,24 @@ parser.add_argument('--username',
 parser.add_argument('--password',
                     help="Your password, not necessary, but required you have to login first, to have the cookies")
 parser.add_argument("--proxy", help="Your proxy information")
+
+parser.add_argument(
+    "--output", "Output folder where the files would be downloaded to")
+
+parser.add_argument("--interval", help="Interval between crawling")
+
 parser = parser.parse_args()
+
 
 URL = parser.url
 user_name = parser.username
 password = parser.password
 from_page = parser.fromPage
 proxy_server = parser.proxy
+output_folder = parser.output
+
+if parser.interval is not None:
+    interval = int(parser.interval)
 to_page = int(parser.toPage)
 
 # We are gonna read config from config files by using this function
@@ -128,11 +139,27 @@ if __name__ == '__main__':
         try:
             xamvn = XamVN(headers=headers, cookies=cookies)
 
-            xamvn.apply_params(config=config, from_page=from_page,
+            # Basic params
+            xamvn.apply_params(from_page=from_page,
                                to_page=to_page, URL=URL)
+
+            # Set proxy
             if proxy_server is not None:
                 xamvn.apply_params(proxy=proxy_server)
 
+            # Download folder
+            if output_folder is not None:
+                xamvn.apply_params(output_folder=output_folder)
+            else:
+                xamvn.apply_params(
+                    output_folder=config['XAMVN']['default-download-dir'])
+
+            # Interval between crawl
+            if interval is not None:
+                xamvn.apply_params(interval=interval)
+            else:
+                xamvn.apply_params(interval=int(
+                    config['CHROME-DRIVER']['interval-between-crawl']))
             # Do the job
             xamvn.crawl()
         except Exception as e:
