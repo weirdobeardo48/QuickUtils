@@ -15,6 +15,9 @@ class XamVN:
     # Well, not resource friendly, but WTH
     __all_link = set()
 
+    __use_proxy = False
+    __proxy: dict = None
+
     def __init__(self, headers: dict, cookies: dict) -> None:
         self.__requests_headers = headers
         self.__cookies = cookies
@@ -30,6 +33,18 @@ class XamVN:
             self.__to_page = kwargs['to_page']
         if 'config' in kwargs:
             self.__config = kwargs['config']
+        if 'proxy' in kwargs:
+            self.__use_proxy = True
+            self.__proxy = {
+                "http": kwargs['proxy'], "https": kwargs['proxy'], "ftp": kwargs['proxy']}
+
+    def get(self, url):
+        if self.__use_proxy:
+            self.f.get(
+                url, headers=self.__requests_headers, cookies=self.__cookies, timeout=self.__default_timeout, proxies=self.__proxy)
+        else:
+            return self.f.get(
+                url, headers=self.__requests_headers, cookies=self.__cookies, timeout=self.__default_timeout)
 
     def get_element_url_and_download(self, elements) -> None:
         count = 0
@@ -58,8 +73,7 @@ class XamVN:
             time.sleep(int(self.__config['CHROME-DRIVER']
                            ['interval-between-crawl']))
             count += 1
-            req = self.f.get(
-                link, headers=self.__requests_headers, cookies=self.__cookies, timeout=self.__default_timeout)
+            req = self.get(link)
             self.__log.info("Status code: " + str(req.status_code))
             if req.status_code == 200:
                 self.__log.info("Downloading from URL: %s", link)
@@ -87,8 +101,8 @@ class XamVN:
             # break
         while self.__current_page < self.__to_page + 1:
             self.__log.info('Getting page: %s' % str(self.__current_page))
-            req = self.f.get(self.__URL + '/page-' +
-                             str(self.__current_page), headers=self.__requests_headers, cookies=self.f.cookies, timeout=self.__default_timeout)
+            req = self.get(self.__URL + '/page-' +
+                           str(self.__current_page))
 
             soup = BeautifulSoup(req.text, "html.parser")
             images = soup.find_all('img')
