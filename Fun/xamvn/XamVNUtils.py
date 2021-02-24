@@ -42,7 +42,7 @@ class XamVN:
         self.__log.info("Downloading from URL: %s", url)
         if self.__use_proxy:
             self.__log.info("Using proxy: %s" % str(self.__proxy))
-            self.f.get(
+            return self.f.get(
                 url, headers=self.__requests_headers, cookies=self.__cookies, timeout=self.__default_timeout, proxies=self.__proxy)
         else:
             return self.f.get(
