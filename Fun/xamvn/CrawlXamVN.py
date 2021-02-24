@@ -39,7 +39,7 @@ password = parser.password
 from_page = parser.fromPage
 proxy_server = parser.proxy
 output_folder = parser.output
-
+interval = 1
 if parser.interval is not None:
     interval = int(parser.interval)
 to_page = int(parser.toPage)
