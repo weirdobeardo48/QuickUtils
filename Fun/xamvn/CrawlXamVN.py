@@ -25,8 +25,8 @@ parser.add_argument('--password',
                     help="Your password, not necessary, but required you have to login first, to have the cookies")
 parser.add_argument("--proxy", help="Your proxy information")
 
-parser.add_argument(
-    "--output", "Output folder where the files would be downloaded to")
+parser.add_argument('-o',
+                    '--output', help="Output folder where the files would be downloaded to")
 
 parser.add_argument("--interval", help="Interval between crawling")
 
