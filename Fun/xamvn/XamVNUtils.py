@@ -6,7 +6,7 @@ import time
 
 
 class XamVN:
-
+    __default_timeout = 30
     __current_page = 1
     __requests_headers: dict = None
     __cookies: dict = None
@@ -59,7 +59,7 @@ class XamVN:
                            ['interval-between-crawl']))
             count += 1
             req = self.f.get(
-                link, headers=self.__requests_headers, cookies=self.__cookies)
+                link, headers=self.__requests_headers, cookies=self.__cookies, timeout=self.__default_timeout)
             self.__log.info("Status code: " + str(req.status_code))
             if req.status_code == 200:
                 self.__log.info("Downloading from URL: %s", link)
@@ -88,7 +88,7 @@ class XamVN:
         while self.__current_page < self.__to_page + 1:
             self.__log.info('Getting page: %s' % str(self.__current_page))
             req = self.f.get(self.__URL + '/page-' +
-                             str(self.__current_page), headers=self.__requests_headers, cookies=self.f.cookies)
+                             str(self.__current_page), headers=self.__requests_headers, cookies=self.f.cookies, timeout=self.__default_timeout)
 
             soup = BeautifulSoup(req.text, "html.parser")
             images = soup.find_all('img')
