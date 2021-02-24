@@ -23,6 +23,7 @@ parser.add_argument('--username',
                     help="Your user name, not necessary, but required you have to login first, to have the cookies")
 parser.add_argument('--password',
                     help="Your password, not necessary, but required you have to login first, to have the cookies")
+parser.add_argument("--proxy", help="Your proxy information")
 parser = parser.parse_args()
 
 URL = parser.url
