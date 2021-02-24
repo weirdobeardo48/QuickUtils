@@ -3,7 +3,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 import time
-
+import traceback
 
 class XamVN:
     __default_timeout = 30
@@ -78,19 +78,23 @@ class XamVN:
             time.sleep(int(self.__config['CHROME-DRIVER']
                            ['interval-between-crawl']))
             count += 1
-            req = self.get(link)
+            try:
+                req = self.get(link)
 
-            if req.status_code == 200:
+                if req.status_code == 200:
 
-                if not os.path.exists(
-                        os.path.join(self.__config['XAMVN']['default-download-dir'], str(self.__current_page))):
-                    os.makedirs(
-                        os.path.join(self.__config['XAMVN']['default-download-dir'], str(self.__current_page)))
-                file_type = str(req.headers['Content-Type']).split('/')[-1]
-                with open(os.path.join(self.__config['XAMVN']['default-download-dir'], str(self.__current_page),
-                                       str(count) + "." + file_type), 'wb') as file:
-                    file.write(req.content)
-                self.__log.info("Done getting URL: %s" % link)
+                    if not os.path.exists(
+                            os.path.join(self.__config['XAMVN']['default-download-dir'], str(self.__current_page))):
+                        os.makedirs(
+                            os.path.join(self.__config['XAMVN']['default-download-dir'], str(self.__current_page)))
+                    file_type = str(req.headers['Content-Type']).split('/')[-1]
+                    with open(os.path.join(self.__config['XAMVN']['default-download-dir'], str(self.__current_page),
+                                        str(count) + "." + file_type), 'wb') as file:
+                        file.write(req.content)
+                    self.__log.info("Done getting URL: %s" % link)
+            except Exception as e:
+                self.__log.exception(e)
+                traceback.print_exc()
 
     def crawl(self):
         # Get URL, to get some cookies, blah blah, and parse them to the fucking request
