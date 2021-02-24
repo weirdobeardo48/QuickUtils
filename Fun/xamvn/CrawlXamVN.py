@@ -29,6 +29,7 @@ URL = parser.url
 user_name = parser.username
 password = parser.password
 from_page = parser.fromPage
+proxy_server = parser.proxy
 to_page = int(parser.toPage)
 
 # We are gonna read config from config files by using this function
@@ -128,6 +129,8 @@ if __name__ == '__main__':
 
             xamvn.apply_params(config=config, from_page=from_page,
                                to_page=to_page, URL=URL)
+            if proxy_server is not None:
+                xamvn.apply_params(proxy=proxy_server)
 
             # Do the job
             xamvn.crawl()
