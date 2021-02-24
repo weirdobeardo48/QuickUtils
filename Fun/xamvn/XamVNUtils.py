@@ -42,11 +42,14 @@ class XamVN:
         self.__log.info("Downloading from URL: %s", url)
         if self.__use_proxy:
             self.__log.info("Using proxy: %s" % str(self.__proxy))
-            return self.f.get(
+            req = self.f.get(
                 url, headers=self.__requests_headers, cookies=self.__cookies, timeout=self.__default_timeout, proxies=self.__proxy)
         else:
-            return self.f.get(
+            req = self.f.get(
                 url, headers=self.__requests_headers, cookies=self.__cookies, timeout=self.__default_timeout)
+        self.__log.info("Status code for url %s: %s" %
+                        (url, str(req.status_code)))
+        return req
 
     def get_element_url_and_download(self, elements) -> None:
         count = 0
@@ -76,7 +79,7 @@ class XamVN:
                            ['interval-between-crawl']))
             count += 1
             req = self.get(link)
-            self.__log.info("Status code: " + str(req.status_code))
+
             if req.status_code == 200:
 
                 if not os.path.exists(
