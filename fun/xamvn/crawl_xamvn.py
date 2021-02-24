@@ -1,14 +1,13 @@
 #!/usr/bin/python3
-from Fun.xamvn.XamVNUtils import XamVN
-from selenium import webdriver
-import requests
-import os
+import argparse
+import configparser
+import json
 import logging
 import logging.config
-import configparser
-import argparse
-import json
+import os
 import traceback
+
+from fun.xamvn.xamvn_utils import XamVN
 
 # Take argument
 parser = argparse.ArgumentParser()
@@ -39,20 +38,23 @@ password = parser.password
 from_page = parser.fromPage
 proxy_server = parser.proxy
 output_folder = parser.output
-interval = 1
+INTERVAL = 1
 if parser.interval is not None:
     interval = int(parser.interval)
 to_page = int(parser.toPage)
 
 # We are gonna read config from config files by using this function
-config = None
+CONFIG = None
 
 
 def init_config():
+    """
+    Init config, read from file ./config/configs.ini
+    """
     # print('Loading config at startup!')
-    global config
-    config = configparser.ConfigParser()
-    config.read('config/configs.ini')
+    global CONFIG
+    CONFIG = configparser.ConfigParser()
+    CONFIG.read('config/configs.ini')
 
 
 # End init config, call it in what ever you want to read, or re-read!
@@ -64,11 +66,14 @@ log = logging.getLogger(__name__)
 
 
 def init_log():
-    global config
+    """
+    Init logger
+    """
+    global CONFIG
     # Just a workaround, but whatever, this just a cheap script
-    if os.path.join(config['LOGGER']['log_file_path']):
-        if not os.path.exists(os.path.join(config['LOGGER']['log_file_path'])):
-            os.makedirs(os.path.join(config['LOGGER']['log_file_path']))
+    if os.path.join(CONFIG['LOGGER']['log_file_path']):
+        if not os.path.exists(os.path.join(CONFIG['LOGGER']['log_file_path'])):
+            os.makedirs(os.path.join(CONFIG['LOGGER']['log_file_path']))
     logging_config = {
         'version': 1,
         'disable_existing_loggers': False,
@@ -80,9 +85,9 @@ def init_log():
         'handlers': {
             'default_handler': {
                 'class': 'logging.handlers.TimedRotatingFileHandler',
-                'level': config['LOGGER']['file_log_level'],
+                'level': CONFIG['LOGGER']['file_log_level'],
                 'formatter': 'standard',
-                'filename': os.path.join(config['LOGGER']['log_file_path'], 'application.log'),
+                'filename': os.path.join(CONFIG['LOGGER']['log_file_path'], 'application.log'),
                 'encoding': 'utf8',
                 'backupCount': 10,
                 'when': 'd',
@@ -90,14 +95,14 @@ def init_log():
             },
             'stdout_handler': {
                 'class': 'logging.StreamHandler',
-                'level': config['LOGGER']['std_out_log_level'],
+                'level': CONFIG['LOGGER']['std_out_log_level'],
                 'formatter': 'standard'
             }
         },
         'loggers': {
             '': {
                 'handlers': ['default_handler', 'stdout_handler'],
-                'level': config['LOGGER']['default_log_level'],
+                'level': CONFIG['LOGGER']['default_log_level'],
                 'propagate': False
             }
         }
@@ -108,18 +113,28 @@ def init_log():
 
 # End defining log
 
+
 def read_json_file_to_dict(file_path) -> dict:
+    """
+    Read from json file and parse it to python dictionary
+    """
     with open(file=file_path, mode="r") as f:
         text = "".join(f.readlines())
         return json.loads(text)
 
 
 def get_headers() -> dict:
-    return read_json_file_to_dict('./Fun/xamvn/files/headers.json')
+    """"
+    Read from ./fun/xamvn/files/headers.json file and parse it to dictionary
+    """
+    return read_json_file_to_dict('./fun/xamvn/files/headers.json')
 
 
 def get_cookies() -> dict:
-    return read_json_file_to_dict('./Fun/xamvn/files/cookies.json')
+    """
+    Read from ./fun/xamvn/files/cookies.json file and parse it to dictionary
+    """
+    return read_json_file_to_dict('./fun/xamvn/files/cookies.json')
 
 
 if __name__ == '__main__':
@@ -152,19 +167,19 @@ if __name__ == '__main__':
                 xamvn.apply_params(output_folder=output_folder)
             else:
                 xamvn.apply_params(
-                    output_folder=config['XAMVN']['default-download-dir'])
+                    output_folder=CONFIG['XAMVN']['default-download-dir'])
 
             # Interval between crawl
-            if interval is not None:
-                xamvn.apply_params(interval=interval)
+            if INTERVAL is not None:
+                xamvn.apply_params(interval=INTERVAL)
             else:
                 xamvn.apply_params(interval=int(
-                    config['CHROME-DRIVER']['interval-between-crawl']))
+                    CONFIG['CHROME-DRIVER']['interval-between-crawl']))
             # Do the job
             xamvn.crawl()
-        except Exception as e:
+        except Exception as exception:
             traceback.print_exc()
-            log.exception(e)
+            log.exception(exception)
 
     else:
         log.error("Specify your headers in a file call headers.json")

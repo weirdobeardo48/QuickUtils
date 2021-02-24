@@ -1,9 +1,11 @@
 import logging
 import os
-import requests
-from bs4 import BeautifulSoup
 import time
 import traceback
+
+import requests
+from bs4 import BeautifulSoup
+
 
 
 class XamVN:
@@ -80,9 +82,9 @@ class XamVN:
                     self.__all_link.add(link)
 
         for link in all_link:
-            self.__log.info("Getting URL: %s" % link)
+            self.__log.info("Getting URL: %s", link)
 
-            self.__log.info("Sleeping for %s second" %
+            self.__log.info("Sleeping for %s second",
                             str(self.__interval_between_crawl))
             time.sleep(self.__interval_between_crawl)
             count += 1
@@ -99,7 +101,7 @@ class XamVN:
                     with open(os.path.join(self.__output_folder, str(self.__current_page),
                                            str(count) + "." + file_type), 'wb') as file:
                         file.write(req.content)
-                    self.__log.info("Done getting URL: %s" % link)
+                    self.__log.info("Done getting URL: %s", link)
             except Exception as e:
                 self.__log.exception(e)
                 traceback.print_exc()
